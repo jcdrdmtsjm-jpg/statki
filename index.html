@@ -316,7 +316,7 @@ footer{text-align:center;font:11px var(--mono);color:#4d6273;padding:10px}
   <div class="log" id="log"></div>
 </section>
 </main>
-<footer>Połączenie peer-to-peer (WebRTC / PeerJS). Twoje ustawienie floty nie jest wysyłane przeciwnikowi przed końcem bitwy.</footer>
+<footer>Łączność przez szyfrowany przekaźnik MQTT (WSS) — działa w każdej sieci. Twoje ustawienie floty nie jest wysyłane przeciwnikowi przed końcem bitwy.</footer>
 
 <div class="overlay" id="overlay">
   <div class="endcard" id="endcard">
@@ -332,8 +332,8 @@ footer{text-align:center;font:11px var(--mono);color:#4d6273;padding:10px}
   </div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
-<script>window.Peer||document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"><\/script>')</script>
+<script src="https://unpkg.com/mqtt@5.16.1/dist/mqtt.min.js"></script>
+<script>window.mqtt||document.write('<script src="https://cdn.jsdelivr.net/npm/mqtt@5.16.1/dist/mqtt.min.js"><\/script>')</script>
 <script id="bs-logic">
 /* ===== Czysta logika gry (testowalna bez przeglądarki) ===== */
 var BS = (function(){
@@ -468,7 +468,6 @@ var N = BS.N, $ = function(id){ return document.getElementById(id); };
 var PREFIX = 'statki-ww2-';
 var APP = 'statki-ww2-v1';
 var STORE = 'statki-ww2-state';
-var PEER_OPTS = { debug: 1 };
 
 /* ---------- Grafika okrętów (SVG inline, widok z góry, dziób w prawo) ---------- */
 function turret(x, y, dir, r){
@@ -572,9 +571,9 @@ var S = {
   def:null, attack:{}, turn:null, pending:null, oppSunk:[], oppReveal:null, verified:null,
   gameNo:1, result:null, score:{me:0,opp:0}, rematchMe:false, rematchOpp:false,
   stats:{shots:0,hits:0}, log:[],
-  peer:null, conn:null, lastSeen:0, tab:'enemy', tabPinned:false
+  net:null, lastSeen:0, tab:'enemy', tabPinned:false
 };
-var PERSIST = ['role','room','phase','ships','vert','myReady','oppReady','def','attack','turn','pending','oppSunk','oppReveal','verified','gameNo','result','score','rematchMe','rematchOpp','stats','log'];
+var PERSIST = ['role','room','phase','ships','vert','myReady','oppReady','def','attack','turn','pending','oppSunk','oppReveal','verified','gameNo','result','score','rematchMe','rematchOpp','stats','log','net'];
 function save(){
   try { var o = {}; PERSIST.forEach(function(k){ o[k] = S[k]; }); o.t = Date.now(); sessionStorage.setItem(STORE, JSON.stringify(o)); } catch(e){}
 }
@@ -956,125 +955,132 @@ function copyText(t){
   }
 }
 
-/* ---------- Sieć (PeerJS / WebRTC) ---------- */
+/* ---------- Sieć: przekaźnik MQTT przez WSS (publiczne brokery, bez kont) ----------
+   Każda strona łączy się równolegle z kilkoma brokerami i wysyła każdą wiadomość przez wszystkie,
+   odbiorca usuwa duplikaty po numerze sekwencyjnym. Niezawodność: numery seq, potwierdzenia (ack),
+   ponawianie niepotwierdzonych, dostarczanie w kolejności. Działa przez NAT, sieci komórkowe itd. */
+var BROKERS = [
+  {url:'wss://broker.hivemq.com:8884/mqtt'},
+  {url:'wss://broker.emqx.io:8084/mqtt'},
+  {url:'wss://public.cloud.shiftr.io:443', username:'public', password:'public'},
+  {url:'wss://test.mosquitto.org:8081/mqtt'}
+];
+var clients = [], tickT = null;
 function genCode(){ var a = 'abcdefghjkmnpqrstuvwxyz23456789', s = ''; for (var i=0;i<6;i++) s += a[Math.floor(Math.random()*a.length)]; return s; }
 function normCode(x){
   x = String(x || '').trim();
-  var m = x.match(/[?&]join=([^&#\s]+)/i); if (m) x = decodeURIComponent(m[1]);
+  var m = x.match(/[?&](?:join|host)=([^&#\s]+)/i); if (m) x = decodeURIComponent(m[1]);
   x = x.toLowerCase(); if (x.indexOf(PREFIX) === 0) x = x.slice(PREFIX.length);
   return x.replace(/[^a-z0-9]/g, '');
 }
-function peerOk(){
-  if (typeof Peer === 'undefined'){ setNet('err', 'Nie udało się załadować biblioteki PeerJS (brak internetu?)'); toast('Brak biblioteki sieciowej — odśwież stronę'); return false; }
+function rid(){ return Math.random().toString(36).slice(2, 10); }
+function topicOut(){ return 'statki-ww2/' + S.room + '/' + (S.role === 'host' ? 'h2g' : 'g2h'); }
+function topicIn(){ return 'statki-ww2/' + S.room + '/' + (S.role === 'host' ? 'g2h' : 'h2g'); }
+function libOk(){
+  if (typeof mqtt === 'undefined'){ setNet('err', 'Nie udało się załadować biblioteki sieciowej — sprawdź internet i odśwież stronę'); toast('Brak biblioteki sieciowej — odśwież stronę'); return false; }
   return true;
 }
-function netError(err){
-  var map = {
-    'browser-incompatible':'Ta przeglądarka nie obsługuje WebRTC',
-    'network':'Brak połączenia z serwerem sygnałowym — ponawiam…',
-    'server-error':'Serwer PeerJS nie odpowiada — ponawiam…',
-    'socket-error':'Błąd gniazda sieciowego — ponawiam…',
-    'socket-closed':'Połączenie z serwerem zamknięte — ponawiam…',
-    'disconnected':'Rozłączono z serwerem — ponawiam…',
-    'webrtc':'Błąd WebRTC (sieć/NAT)'
-  };
-  console.warn('PeerJS', err && err.type, err);
-  setNet('err', map[err && err.type] || ('Błąd sieci: ' + (err && err.type || err)));
-  if (S.peer && !S.peer.destroyed && S.peer.disconnected) setTimeout(function(){ try { S.peer.reconnect(); } catch(e){} }, 3000);
-  if (S.role === 'guest') scheduleRetry(4000);
-}
-function startHost(code, restoring){
-  if (!peerOk()) return;
-  S.role = 'host'; S.room = code || genCode(); save();
-  var tries = 0;
-  (function mk(){
-    if (S.peer){ try { S.peer.destroy(); } catch(e){} }
-    setNet('wait', 'Otwieram pokój…');
-    var peer = S.peer = new Peer(PREFIX + S.room, PEER_OPTS);
-    peer.on('open', function(){ setNet(S.connected ? 'ok' : 'wait', S.connected ? 'Połączono z przeciwnikiem' : 'Pokój ' + S.room.toUpperCase() + ' otwarty — czekam na gracza 2'); renderAll(); });
-    peer.on('connection', function(c){
-      if (!c.metadata || c.metadata.app !== APP){ setTimeout(function(){ try { c.close(); } catch(e){} }, 500); return; }
-      if (S.conn && S.conn !== c){ var old = S.conn; S.conn = null; try { old.close(); } catch(e){} }
-      bindConn(c);
+function netStart(){
+  if (!libOk()) return;
+  if (!S.net || !S.net.sid) S.net = {sid: rid() + rid(), out:0, q:[], peer:null, exp:1, buf:{}};
+  if (!S.net.buf) S.net.buf = {};
+  clients.forEach(function(c){ try { c.end(true); } catch(e){} }); clients = [];
+  BROKERS.forEach(function(b){
+    var c;
+    try {
+      c = mqtt.connect(b.url, {clientId:'statki_' + rid() + rid(), clean:true, keepalive:20, reconnectPeriod:3000,
+        connectTimeout:10000, protocolVersion:4, username:b.username, password:b.password});
+    } catch(e){ console.warn('mqtt', b.url, e); return; }
+    c._url = b.url; clients.push(c);
+    c.on('connect', function(){ c.subscribe(topicIn(), {qos:1}); netStatus(); hb(); flush(true); });
+    c.on('message', function(t, payload){
+      if (t !== topicIn()) return;
+      var env; try { env = JSON.parse(String(payload)); } catch(e){ return; }
+      recv(env);
     });
-    peer.on('disconnected', function(){ if (peer !== S.peer || peer.destroyed) return; setNet(S.connected ? 'ok' : 'wait', S.connected ? 'Połączono (serwer sygnałowy offline — ponawiam)' : 'Utracono serwer sygnałowy — ponawiam…'); setTimeout(function(){ if (peer === S.peer && !peer.destroyed && peer.disconnected) try { peer.reconnect(); } catch(e){} }, 2500); });
-    peer.on('error', function(err){
-      if (peer !== S.peer) return;
-      if (err.type === 'unavailable-id'){
-        if (restoring && tries++ < 10){ setNet('wait', 'Odzyskuję pokój ' + S.room.toUpperCase() + '… (' + tries + ')'); setTimeout(mk, 4000); }
-        else { S.room = genCode(); restoring = false; save(); mk(); }
-        return;
-      }
-      netError(err);
-    });
-  })();
-}
-var retryT, connT;
-function startGuest(code){
-  if (!peerOk()) return;
-  S.role = 'guest'; S.room = code; save();
-  setNet('wait', 'Łączę z serwerem…');
-  var peer = S.peer = new Peer(PEER_OPTS);
-  peer.on('open', function(){ connectHost(); });
-  peer.on('disconnected', function(){ if (peer.destroyed) return; setTimeout(function(){ if (!peer.destroyed && peer.disconnected) try { peer.reconnect(); } catch(e){} }, 2000); });
-  peer.on('error', function(err){
-    if (err.type === 'peer-unavailable'){ setNet('err', 'Pokój ' + S.room.toUpperCase() + ' nie odpowiada — Gracz 1 musi mieć otwartą stronę. Ponawiam…'); scheduleRetry(5000); return; }
-    netError(err);
+    c.on('close', netStatus); c.on('offline', netStatus);
+    c.on('error', function(e){ console.warn('mqtt', b.url, e && e.message); });
   });
+  netStatus();
+  clearInterval(tickT); tickT = setInterval(tick, 2000);
 }
-function connectHost(){
-  clearTimeout(retryT);
-  var peer = S.peer; if (!peer || peer.destroyed) return;
-  if (peer.disconnected){ try { peer.reconnect(); } catch(e){} return; }
-  if (S.conn && S.conn.open) return;
-  setNet('wait', 'Łączę z pokojem ' + S.room.toUpperCase() + '…');
-  var c = peer.connect(PREFIX + S.room, {reliable:true, serialization:'json', metadata:{app:APP}});
-  bindConn(c);
-  clearTimeout(connT);
-  connT = setTimeout(function(){
-    if (!c.open && S.conn === c){ try { c.close(); } catch(e){} S.conn = null; setNet('err', 'Nie udało się zestawić połączenia (sieć/NAT). Ponawiam…'); scheduleRetry(1500); }
-  }, 15000);
+function brokersUp(){ return clients.filter(function(c){ return c.connected; }).length; }
+function pub(env){
+  var s = JSON.stringify(env), n = 0;
+  clients.forEach(function(c){ if (c.connected){ try { c.publish(topicOut(), s, {qos:1}); n++; } catch(e){} } });
+  return n;
 }
-function scheduleRetry(ms){ clearTimeout(retryT); retryT = setTimeout(connectHost, ms); }
-function bindConn(c){
-  S.conn = c;
-  c.on('open', function(){
-    if (S.conn !== c) return;
-    clearTimeout(connT);
-    var first = !S.everConnected;
-    S.connected = true; S.everConnected = true; S.lastSeen = Date.now();
-    setNet('ok', 'Połączono z przeciwnikiem');
-    send({t:'hello', role:S.role, ready:S.myReady, phase:S.phase});
-    log(first ? 'ŁĄCZNOŚĆ RADIOWA NAWIĄZANA STOP PRZECIWNIK NA NASŁUCHU' : 'ŁĄCZNOŚĆ PRZYWRÓCONA STOP', 'air');
-    if (S.pending) send({t:'shot', r:S.pending.r, c:S.pending.c});
-    if (S.phase === 'over') send({t:'reveal', ships:S.ships});
-    if (S.rematchMe) send({t:'rematch'});
-    renderAll();
-  });
-  c.on('data', function(m){ if (S.conn === c) onData(m); });
-  c.on('close', function(){ if (S.conn === c) lost(); });
-  c.on('error', function(e){ console.warn('conn error', e); });
+function envBase(){ return {a:APP, from:S.net.sid, role:S.role, ack:S.net.exp - 1, lo: S.net.q.length ? S.net.q[0].seq : S.net.out + 1}; }
+function hb(){ if (!S.net) return; var e = envBase(); e.seq = 0; e.m = {t:'ping'}; pub(e); }
+/* niezawodne wysyłanie: kolejka z numerami, ponawiana do potwierdzenia */
+function send(m){
+  if (!S.net || !S.role) return false;
+  if (m.g == null) m.g = S.gameNo;
+  var seq = ++S.net.out; S.net.q.push({seq:seq, m:m, ts:0});
+  if (S.net.q.length > 200) S.net.q.splice(0, S.net.q.length - 200);
+  flush(false); save(); return true;
+}
+function flush(all){
+  if (!S.net) return;
+  var now = Date.now();
+  S.net.q.forEach(function(it){ if (all || now - it.ts > 2500){ var e = envBase(); e.seq = it.seq; e.m = it.m; if (pub(e)) it.ts = now; } });
+}
+function recv(e){
+  var NS = S.net;
+  if (!e || e.a !== APP || !NS || e.from === NS.sid) return;
+  if (e.role === S.role){ setNet('err', 'Obaj gracze mają tę samą rolę — Gracz 2 musi otworzyć link zaproszenia'); return; }
+  var newPeer = NS.peer !== e.from;
+  if (newPeer){ NS.peer = e.from; NS.exp = e.lo || 1; NS.buf = {}; }
+  if (typeof e.ack === 'number') NS.q = NS.q.filter(function(it){ return it.seq > e.ack; });
+  S.lastSeen = Date.now();
+  if (!S.connected) peerOnline();
+  else if (newPeer) send({t:'hello', role:S.role, ready:S.myReady, phase:S.phase});
+  if (e.seq > 0){
+    if (e.seq >= NS.exp && !NS.buf[e.seq]) NS.buf[e.seq] = e.m;
+    while (NS.buf[NS.exp]){ var m = NS.buf[NS.exp]; delete NS.buf[NS.exp]; NS.exp++; onData(m); }
+    var a = envBase(); a.seq = 0; a.m = {t:'ack'}; pub(a);
+    save();
+  }
+}
+function peerOnline(){
+  var first = !S.everConnected;
+  S.connected = true; S.everConnected = true; S.lastSeen = Date.now();
+  netStatus();
+  send({t:'hello', role:S.role, ready:S.myReady, phase:S.phase});
+  log(first ? 'ŁĄCZNOŚĆ RADIOWA NAWIĄZANA STOP PRZECIWNIK NA NASŁUCHU' : 'ŁĄCZNOŚĆ PRZYWRÓCONA STOP', 'air');
+  flush(true); renderAll();
 }
 function lost(){
-  var was = S.connected;
-  S.connected = false; S.conn = null;
-  if (S.role === 'host') setNet('wait', 'Przeciwnik rozłączony — czeka na niego ten sam link (' + (S.room||'').toUpperCase() + ')');
-  else { setNet('err', 'Utracono połączenie — ponawiam…'); scheduleRetry(2000); }
-  if (was) log('UTRACONO ŁĄCZNOŚĆ Z PRZECIWNIKIEM STOP NASŁUCHUJEMY', 'air');
+  S.connected = false; netStatus();
+  log('UTRACONO ŁĄCZNOŚĆ Z PRZECIWNIKIEM STOP NASŁUCHUJEMY', 'air');
   renderAll();
 }
-function send(m){
-  if (!S.conn || !S.conn.open) return false;
-  if (m.g == null) m.g = S.gameNo;
-  try { S.conn.send(m); return true; } catch(e){ return false; }
+function netStatus(){
+  if (!S.role) return;
+  var up = brokersUp(), R = (S.room || '').toUpperCase();
+  if (!up) setNet('err', 'Brak połączenia z serwerem — ponawiam…');
+  else if (S.connected) setNet('ok', 'Połączono z przeciwnikiem');
+  else if (S.role === 'host') setNet('wait', S.everConnected ? 'Przeciwnik offline — czekam na powrót (pokój ' + R + ')' : 'Pokój ' + R + ' otwarty — czekam na gracza 2');
+  else setNet('wait', S.everConnected ? 'Przeciwnik offline — czekam…' : 'Szukam pokoju ' + R + '… (Gracz 1 musi mieć otwartą stronę)');
+}
+function tick(){
+  if (!clients.length) return;
+  hb(); flush(false);
+  if (S.connected && Date.now() - S.lastSeen > 12000) lost();
+  netStatus();
+}
+function startHost(code){
+  S.role = 'host'; S.room = code || genCode(); save();
+  netStart(); renderAll();
+}
+function startGuest(code){
+  S.role = 'guest'; S.room = code; save();
+  netStart(); renderAll();
 }
 function onData(m){
   if (!m || typeof m !== 'object') return;
-  S.lastSeen = Date.now();
   switch(m.t){
-    case 'ping': return;
     case 'hello':
-      if (m.role === S.role){ setNet('err', 'Obaj gracze mają tę samą rolę — Gracz 2 musi otworzyć link zaproszenia'); return; }
       if (m.g === S.gameNo){ var was = S.oppReady; S.oppReady = !!m.ready || (m.phase === 'battle' || m.phase === 'over'); if (S.oppReady && !was && S.phase === 'place') log('PRZECIWNIK ZGŁASZA GOTOWOŚĆ BOJOWĄ STOP', 'air'); }
       maybeStart(); break;
     case 'ready': if (m.g === S.gameNo){ S.oppReady = true; log('PRZECIWNIK ZGŁASZA GOTOWOŚĆ BOJOWĄ STOP', 'air'); maybeStart(); } break;
@@ -1086,18 +1092,15 @@ function onData(m){
   }
   save(); renderAll();
 }
-setInterval(function(){
-  if (S.connected){
-    send({t:'ping'});
-    if (Date.now() - S.lastSeen > 16000 && S.conn){ var c = S.conn; S.conn = null; try { c.close(); } catch(e){} lost(); }
-  }
-}, 4000);
-document.addEventListener('visibilitychange', function(){
-  if (document.visibilityState !== 'visible' || !S.peer) return;
-  S.lastSeen = Math.max(S.lastSeen, Date.now() - 8000);
-  if (S.peer.disconnected && !S.peer.destroyed){ try { S.peer.reconnect(); } catch(e){} }
-  if (S.role === 'guest' && !S.connected) scheduleRetry(300);
-});
+function wake(){
+  if (!clients.length) return;
+  S.lastSeen = Math.max(S.lastSeen, Date.now() - 6000);
+  clients.forEach(function(c){ if (!c.connected && !c.disconnecting){ try { c.reconnect(); } catch(e){} } });
+  hb(); flush(true); netStatus();
+}
+document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') wake(); });
+window.addEventListener('pageshow', wake);
+window.addEventListener('online', wake);
 
 function renderAll(){
   if (S.phase === 'place') renderPlace();
@@ -1110,7 +1113,7 @@ $('muteBtn').onclick = function(){ SFX.muted = !SFX.muted; localStorage.setItem(
 $('quitBtn').onclick = function(){
   if (!confirm('Opuścić pokój i zakończyć grę?')) return;
   try { sessionStorage.removeItem(STORE); } catch(e){}
-  try { if (S.peer) S.peer.destroy(); } catch(e){}
+  try { clients.forEach(function(c){ c.end(true); }); } catch(e){}
   location.href = location.pathname;
 };
 $('hostBtn').onclick = function(){ SFX.init(); enterPlacement(); startHost(); };
@@ -1136,7 +1139,7 @@ if (location.protocol === 'file:') $('fileWarn').innerHTML = '<div class="warnbo
     S.oppReady = S.phase === 'battle' || S.phase === 'over' ? true : false;
     if (S.phase === 'place'){ S.sel = null; showScreen('scrPlace'); renderPlace(); }
     else { showScreen('scrBattle'); autoTab(0); renderBattle(); if (S.phase === 'over') showOverlay(); }
-    if (S.role === 'host') startHost(S.room, true); else startGuest(S.room);
+    if (S.role === 'host') startHost(S.room); else startGuest(S.room);
     return;
   }
   if (join){ enterPlacement(); startGuest(join); return; }
@@ -1144,7 +1147,7 @@ if (location.protocol === 'file:') $('fileWarn').innerHTML = '<div class="warnbo
   showScreen('scrLobby');
 })();
 
-window.__statki = { S:S, BS:BS, shoot:shoot };
+window.__statki = { S:S, BS:BS, shoot:shoot, send:send, clients:function(){ return clients.map(function(c){ return [c._url, c.connected]; }); } };
 })();
 </script>
 </body>
