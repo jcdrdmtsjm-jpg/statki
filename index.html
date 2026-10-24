@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a141d">
+<title>Statki — Bitwa o Atlantyk 1941</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9A%93%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a141d;--panel:#122030;--panel2:#182a3b;--line:#2b4256;--steel:#8fa3b3;--text:#dce4ea;--dim:#7f95a7;
+  --brass:#c9a54a;--brass2:#e8c873;--red:#d2452f;--green:#63c06d;--amber:#e3a33b;
+  --sea1:#0c2c42;--sea2:#11405f;
+  --cell:clamp(24px, calc((100vw - 30px) / 11), 40px);
+  --stencil:"Impact","Haettenschweiler","Arial Narrow Bold","Oswald",sans-serif;
+  --mono:"Courier New","Courier",ui-monospace,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+body{
+  background:
+    radial-gradient(ellipse at 50% -10%, #1b3a55 0%, transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 2px, transparent 2px 4px),
+    var(--bg);
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+.btn{background:linear-gradient(#22384c,#162636);border:1px solid #3c5a73;border-radius:6px;padding:10px 14px;font-weight:600;letter-spacing:.03em;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 0 #050b10;transition:filter .15s,transform .05s}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.btn.brass{background:linear-gradient(#d8b85e,#a8842f);color:#1b1408;border-color:#f0d78f;text-shadow:0 1px 0 rgba(255,255,255,.3)}
+.btn.red{background:linear-gradient(#c8503a,#8e2b1c);border-color:#e57a63}
+.btn.small{padding:6px 10px;font-size:13px}
+.btn.icon{padding:6px 10px;min-width:40px}
+input.code{font:700 18px var(--mono);letter-spacing:.12em;text-transform:uppercase;padding:10px 12px;border-radius:6px;border:1px solid #3c5a73;background:#0b1824;color:var(--brass2);width:100%;min-width:0}
+input.code::placeholder{letter-spacing:.02em;text-transform:none;color:#4f6577;font-weight:400;font-size:15px}
+
+/* header */
+header{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #1f3346;background:rgba(8,16,24,.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);position:sticky;top:0;z-index:20}
+header .logo{font:28px/1 var(--stencil);letter-spacing:.08em;color:var(--brass2);text-shadow:0 2px 0 #000}
+header .sub{font:11px var(--mono);color:var(--dim);letter-spacing:.2em;text-transform:uppercase}
+header .sp{flex:1}
+.net{display:flex;align-items:center;gap:7px;font:12px var(--mono);color:var(--dim);max-width:46vw;text-align:right;line-height:1.2}
+.lamp{width:11px;height:11px;border-radius:50%;background:#555;box-shadow:0 0 0 2px #0006;flex:none}
+.lamp.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+.lamp.wait{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:blink 1.2s infinite}
+.lamp.err{background:var(--red);box-shadow:0 0 8px var(--red);animation:blink .6s infinite}
+@keyframes blink{50%{opacity:.35}}
+
+main{max-width:1180px;margin:0 auto;padding:14px 12px 40px}
+.screen{display:none}
+.screen.on{display:block}
+.panel{background:linear-gradient(var(--panel2),var(--panel));border:1px solid var(--line);border-radius:10px;padding:14px;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+h2,h3{font-family:var(--stencil);letter-spacing:.08em;font-weight:400;margin:0 0 8px;color:var(--brass2)}
+h2{font-size:26px}h3{font-size:19px}
+.muted{color:var(--dim)}
+.mono{font-family:var(--mono)}
+
+/* lobby */
+.hero{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-bottom:14px}
+.hero svg{display:block;width:100%;height:auto}
+.hero .ttl{position:absolute;left:0;right:0;top:12%;text-align:center;pointer-events:none}
+.hero .ttl b{display:block;font:clamp(44px,11vw,92px)/1 var(--stencil);letter-spacing:.12em;color:#e9d8a6;text-shadow:0 3px 0 #000,0 0 30px rgba(0,0,0,.6)}
+.hero .ttl span{display:block;font:clamp(11px,2.6vw,16px) var(--mono);letter-spacing:.35em;color:#cfd8de;margin-top:6px;text-shadow:0 1px 2px #000}
+.lobbygrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.lobbygrid{grid-template-columns:1fr}}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.nowrap{flex-wrap:nowrap}
+.rules{font-size:14px;line-height:1.5;color:#c2ced7}
+.rules li{margin:3px 0}
+.story{font:14px/1.55 var(--mono);color:#b9c7d2}
+
+/* invite */
+.invite{border:1px dashed #6b5a2c;background:rgba(201,165,74,.06);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.invite .code{font:700 26px var(--mono);letter-spacing:.18em;color:var(--brass2)}
+.invite .link{font:12px var(--mono);color:var(--dim);word-break:break-all;margin-top:6px}
+.warnbox{background:rgba(210,69,47,.12);border:1px solid #7a3326;color:#f1b3a6;border-radius:6px;padding:8px 10px;font-size:13px;margin-top:8px}
+
+/* boards */
+.board{display:grid;grid-template-columns:repeat(11,var(--cell));grid-template-rows:repeat(11,var(--cell));user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;width:max-content;margin:0 auto}
+.lbl{display:flex;align-items:center;justify-content:center;font:700 calc(var(--cell)*.36) var(--mono);color:#6f879a}
+.water{grid-column:2/12;grid-row:2/12;position:relative;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr);
+  border:2px solid #31506a;border-radius:4px;overflow:hidden;
+  background:
+   radial-gradient(ellipse at 30% 20%, rgba(120,190,230,.10), transparent 60%),
+   repeating-radial-gradient(circle at 0 0, rgba(255,255,255,.035) 0 2px, transparent 2px 22px),
+   linear-gradient(160deg,var(--sea2),var(--sea1));
+  background-size:auto,44px 44px,auto;animation:waves 14s linear infinite;
+  box-shadow:inset 0 0 30px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.4)}
+@keyframes waves{to{background-position:0 0,44px 44px,0 0}}
+.cell{border-right:1px solid rgba(150,200,235,.11);border-bottom:1px solid rgba(150,200,235,.11);position:relative}
+.cell:nth-child(10n){border-right:0}
+.cell:nth-child(n+91){border-bottom:0}
+.cell.pv-ok{background:rgba(99,192,109,.35);box-shadow:inset 0 0 0 1px rgba(150,240,160,.6)}
+.cell.pv-bad{background:rgba(210,69,47,.4);box-shadow:inset 0 0 0 1px rgba(255,140,120,.6)}
+.cell.zone{background:rgba(0,0,0,.18)}
+.layer{position:absolute;inset:0;pointer-events:none}
+.ship{position:absolute;filter:drop-shadow(0 2px 2px rgba(0,0,0,.6))}
+.ship svg{width:100%;height:100%;display:block}
+.ship.sunk{filter:grayscale(.5) sepia(.5) brightness(.75) drop-shadow(0 0 2px #ff4a26) drop-shadow(0 0 5px rgba(255,60,30,.7))}
+.ship.reveal{opacity:.95;filter:drop-shadow(0 0 2px #ffe08a) drop-shadow(0 0 6px rgba(255,220,120,.6))}
+.ship.ghost{opacity:.55}
+.mk{position:absolute;width:10%;height:10%}
+.mk.miss::before{content:"";position:absolute;inset:36%;border-radius:50%;background:#cfe6f5;box-shadow:0 0 0 3px rgba(207,230,245,.25)}
+.mk.auto::before{content:"";position:absolute;inset:44%;border-radius:50%;background:rgba(207,230,245,.45)}
+.mk.hit{background:radial-gradient(circle,rgba(60,10,0,.55),rgba(80,10,0,.25) 70%,transparent 72%)}
+.mk.hit::before{content:"";position:absolute;inset:16% 22% 22% 22%;border-radius:50% 50% 45% 45%/60% 60% 40% 40%;
+  background:radial-gradient(circle at 50% 72%,#fff6c2 0 14%,#ffbf3a 32%,#ec5a22 58%,rgba(200,40,10,0) 72%);animation:flick .28s infinite alternate;transform-origin:50% 90%}
+.mk.hit::after{content:"";position:absolute;left:30%;right:30%;top:-12%;height:40%;border-radius:50%;background:radial-gradient(circle,rgba(40,40,40,.55),transparent 70%);animation:smoke 2.4s infinite}
+@keyframes flick{from{transform:scale(.9,1) rotate(-3deg)}to{transform:scale(1.05,1.12) rotate(3deg)}}
+@keyframes smoke{0%{transform:translateY(20%) scale(.6);opacity:.8}100%{transform:translateY(-60%) scale(1.5);opacity:0}}
+.mk.wreck::before,.mk.wreck::after{content:"";position:absolute;left:46%;top:18%;width:8%;height:64%;background:#ff5a36;border-radius:2px;box-shadow:0 0 6px #ff3b1a;transform:rotate(45deg)}
+.mk.wreck::after{transform:rotate(-45deg)}
+.mk.aim{border:2px solid var(--brass2);border-radius:50%;animation:aim .7s infinite}
+@keyframes aim{50%{transform:scale(.7);opacity:.6}}
+#enemyBoard .cell{cursor:pointer}
+.armed .cell{cursor:crosshair}
+#placeBoard .water{touch-action:none}
+.armed .cell:hover::after{content:"";position:absolute;inset:8%;border:2px solid rgba(232,200,115,.9);border-radius:50%;
+  background:linear-gradient(rgba(232,200,115,.9),rgba(232,200,115,.9)) center/2px 100% no-repeat,linear-gradient(rgba(232,200,115,.9),rgba(232,200,115,.9)) center/100% 2px no-repeat}
+.board.dim .water{filter:saturate(.6) brightness(.8)}
+.fx{position:absolute;width:10%;height:10%;pointer-events:none;z-index:5}
+.fx.boom::before{content:"";position:absolute;inset:-60%;border-radius:50%;background:radial-gradient(circle,#fff7cf 0,#ffc23d 22%,#f0521d 45%,rgba(120,20,0,.6) 60%,transparent 70%);animation:boom .75s ease-out forwards}
+.fx.boom::after{content:"";position:absolute;inset:-20%;border-radius:50%;border:3px solid rgba(255,200,120,.9);animation:ring .7s ease-out forwards}
+.fx.splash::before{content:"";position:absolute;inset:10%;border-radius:50%;border:3px solid rgba(225,245,255,.95);animation:ring 1s ease-out forwards}
+.fx.splash::after{content:"";position:absolute;left:42%;top:42%;width:16%;height:16%;border-radius:50%;background:#e6f6ff;
+  box-shadow:-10px -12px 0 -1px #e6f6ff,10px -14px 0 -2px #e6f6ff,0 -20px 0 -1px #e6f6ff,-14px 2px 0 -2px #cfe9f8,14px 0 0 -2px #cfe9f8;animation:drops .9s ease-out forwards}
+@keyframes boom{0%{transform:scale(.1);opacity:1}60%{opacity:1}100%{transform:scale(1.25);opacity:0}}
+@keyframes ring{0%{transform:scale(.2);opacity:1}100%{transform:scale(2.4);opacity:0}}
+@keyframes drops{0%{transform:translateY(6px) scale(.4);opacity:1}100%{transform:translateY(-14px) scale(1.1);opacity:0}}
+.shake{animation:shake .45s}
+@keyframes shake{20%{transform:translate(-4px,2px)}40%{transform:translate(4px,-2px)}60%{transform:translate(-3px,-1px)}80%{transform:translate(2px,1px)}}
+
+/* placement */
+.placegrid{display:grid;grid-template-columns:auto minmax(280px,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.placegrid{grid-template-columns:1fr}}
+.dock{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;margin:8px 0}
+.dk{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;border:1px solid #2c4357;background:#0f1c28;text-align:left;font-size:13px}
+.dk .ic{height:20px;flex:none}
+.dk .ic svg{display:block}
+.dk.sel{border-color:var(--brass2);box-shadow:0 0 0 2px rgba(232,200,115,.35);background:#1b2a1f}
+.dk.done{opacity:.4}
+.dk small{display:block;color:var(--dim);font-size:11px}
+.oppstate{font:13px var(--mono);margin-top:10px;padding:8px 10px;border-radius:6px;background:#0d1924;border:1px solid #233a4e}
+.hint{font-size:13px;color:var(--dim);line-height:1.45}
+
+/* battle */
+.turnbar{text-align:center;font:clamp(17px,4.4vw,24px)/1.2 var(--stencil);letter-spacing:.08em;padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid var(--line);background:#0f1c28;transition:background .3s}
+.turnbar.me{background:linear-gradient(#3b4f21,#24351a);border-color:#7ea64a;color:#e7f5c8;box-shadow:0 0 18px rgba(126,166,74,.35)}
+.turnbar.opp{background:linear-gradient(#4a1d17,#2c1210);border-color:#9a3a2a;color:#f6c9bd}
+.turnbar small{display:block;font:12px var(--mono);letter-spacing:.05em;opacity:.8;margin-top:3px}
+.boards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.bwrap{min-width:0}
+.bwrap h3{text-align:center}
+.tabs{display:none;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;padding:10px;border-radius:6px;border:1px solid var(--line);background:#0f1c28;font-weight:700}
+.tabs button.on{background:linear-gradient(#d8b85e,#a8842f);color:#1b1408;border-color:#f0d78f}
+.tabs button .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--red);margin-left:6px;vertical-align:middle;visibility:hidden}
+.tabs button .dot.show{visibility:visible;animation:blink .8s infinite}
+.tracker{display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;margin-top:8px;font:12px var(--mono);color:var(--dim)}
+.tracker .ts{display:flex;align-items:center;gap:4px;position:relative}
+.tracker .ts svg{display:block}
+.tracker .ts.sunk{opacity:.35}
+.tracker .ts.sunk::after{content:"";position:absolute;left:-2px;right:-2px;top:50%;height:2px;background:var(--red);transform:rotate(-8deg)}
+.tracker .cnt{width:100%;text-align:center;color:#a9b9c6}
+.log{margin-top:14px;background:#efe6cc;color:#2a2418;border-radius:4px;padding:10px 12px 8px;font:13px/1.45 var(--mono);max-height:220px;overflow:auto;
+  box-shadow:inset 0 0 0 1px #c9b98c,0 6px 18px rgba(0,0,0,.45);background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.035) 0 1px,transparent 1px 22px)}
+.log .hd{display:flex;justify-content:space-between;font-weight:700;border-bottom:1px dashed #8c7b52;padding-bottom:4px;margin-bottom:4px;letter-spacing:.1em;color:#5a4a26;position:sticky;top:-10px;background:#efe6cc}
+.log .e{padding:2px 0;border-bottom:1px dotted rgba(0,0,0,.12)}
+.log .e:first-of-type{animation:type .9s steps(36) both}
+.log .e time{color:#8b7a52;margin-right:6px}
+.log .e.me{color:#1f4a17}
+.log .e.opp{color:#7a1d10}
+.log .e.air{color:#1d3d6b}
+@keyframes type{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@media (max-width:899px){
+  .tabs{display:flex}
+  .boards{grid-template-columns:1fr}
+  .boards .bwrap{display:none}
+  .boards .bwrap.on{display:block}
+  .bwrap h3{display:none}
+}
+@media (min-width:900px){
+  :root{--cell:clamp(26px, calc((50vw - 70px) / 11), 40px)}
+}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(3,8,12,.82);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.overlay.on{display:flex}
+.endcard{max-width:440px;width:100%;text-align:center;padding:22px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(#1a2b3a,#0f1b26);box-shadow:0 20px 60px #000}
+.endcard .big{font:clamp(40px,12vw,64px)/1 var(--stencil);letter-spacing:.08em;margin:6px 0 10px}
+.endcard.win .big{color:#e9cf7a;text-shadow:0 0 24px rgba(233,207,122,.45)}
+.endcard.lose .big{color:#e0735f}
+.endcard p{font:14px/1.5 var(--mono);color:#c2ced7}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
+.stats div{background:#0c1822;border:1px solid #233a4e;border-radius:6px;padding:8px 4px;font:11px var(--mono);color:var(--dim)}
+.stats b{display:block;font:22px var(--stencil);color:var(--text);letter-spacing:.05em}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(30px);background:#efe6cc;color:#2a2418;font:600 14px var(--mono);padding:10px 14px;border-radius:6px;box-shadow:0 8px 30px #000;opacity:0;transition:.25s;z-index:60;max-width:92vw;text-align:center;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:520px){header{padding:8px 10px;gap:6px}header .logo{font-size:22px}header .sub{display:none}.net{font-size:11px;max-width:52vw}.turnbar{padding:7px;margin-bottom:8px}main{padding:10px 8px 30px}.panel{padding:12px}}
+footer{text-align:center;font:11px var(--mono);color:#4d6273;padding:10px}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="logo">STATKI</div><div class="sub">Bitwa o Atlantyk · 1941</div></div>
+  <div class="sp"></div>
+  <div class="net" id="net"><span id="netTxt">Brak łączności</span><span class="lamp" id="lamp"></span></div>
+  <button class="btn icon small" id="muteBtn" title="Dźwięk">🔊</button>
+  <button class="btn icon small" id="quitBtn" title="Opuść pokój" style="display:none">✕</button>
+</header>
+<main>
+
+<!-- LOBBY -->
+<section class="screen" id="scrLobby">
+  <div class="hero">
+    <svg viewBox="0 0 1000 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1b29"/><stop offset=".7" stop-color="#2b4153"/><stop offset="1" stop-color="#4c5d68"/></linearGradient>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a3346"/><stop offset="1" stop-color="#071019"/></linearGradient>
+        <radialGradient id="moon" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#f5ecd0"/><stop offset=".6" stop-color="#e2d6ae" stop-opacity=".5"/><stop offset="1" stop-color="#e2d6ae" stop-opacity="0"/></radialGradient>
+      </defs>
+      <rect width="1000" height="360" fill="url(#sky)"/>
+      <circle cx="820" cy="80" r="70" fill="url(#moon)"/><circle cx="820" cy="80" r="26" fill="#efe4c2"/>
+      <g fill="#0b141c" opacity=".55"><ellipse cx="200" cy="90" rx="160" ry="16"/><ellipse cx="640" cy="130" rx="220" ry="12"/><ellipse cx="900" cy="170" rx="140" ry="10"/></g>
+      <!-- aircraft -->
+      <g fill="#0a1118">
+        <g transform="translate(250 70)"><rect x="-38" y="-3" width="76" height="6" rx="3"/><rect x="-60" y="-2" width="120" height="4" rx="2"/><rect x="28" y="-12" width="5" height="24" rx="2"/></g>
+        <g transform="translate(360 110) scale(.7)"><rect x="-38" y="-3" width="76" height="6" rx="3"/><rect x="-60" y="-2" width="120" height="4" rx="2"/><rect x="28" y="-12" width="5" height="24" rx="2"/></g>
+        <g transform="translate(160 125) scale(.55)"><rect x="-38" y="-3" width="76" height="6" rx="3"/><rect x="-60" y="-2" width="120" height="4" rx="2"/><rect x="28" y="-12" width="5" height="24" rx="2"/></g>
+      </g>
+      <!-- searchlight -->
+      <path d="M610 255 L470 40 L520 40 Z" fill="#f5ecd0" opacity=".07"/>
+      <rect y="250" width="1000" height="110" fill="url(#sea)"/>
+      <!-- cruiser silhouette -->
+      <g fill="#060c12">
+        <path d="M380,262 L860,262 L900,246 L360,246 Z"/>
+        <rect x="430" y="232" width="380" height="16"/>
+        <rect x="560" y="196" width="70" height="40"/><rect x="575" y="170" width="40" height="30"/><rect x="590" y="120" width="6" height="52"/><rect x="560" y="138" width="66" height="3"/>
+        <rect x="650" y="180" width="26" height="54" rx="3"/><rect x="690" y="186" width="22" height="48" rx="3"/>
+        <rect x="470" y="222" width="40" height="14" rx="4"/><rect x="420" y="226" width="56" height="4"/>
+        <rect x="740" y="222" width="40" height="14" rx="4"/><rect x="776" y="226" width="58" height="4"/>
+        <rect x="800" y="110" width="4" height="124"/>
+      </g>
+      <!-- u-boat -->
+      <g fill="#04090e"><path d="M60,286 Q150,272 300,280 Q160,294 60,286Z"/><rect x="150" y="262" width="34" height="20" rx="4"/><rect x="164" y="236" width="3" height="28"/></g>
+      <g stroke="#9fb7c6" stroke-opacity=".25" fill="none"><path d="M0,300 Q50,294 100,300 T200,300 T300,300 T400,300 T500,300 T600,300 T700,300 T800,300 T900,300 T1000,300"/><path d="M0,330 Q50,324 100,330 T200,330 T300,330 T400,330 T500,330 T600,330 T700,330 T800,330 T900,330 T1000,330"/></g>
+    </svg>
+    <div class="ttl"><b>STATKI</b><span>BITWA O ATLANTYK · 1941</span></div>
+  </div>
+  <div class="lobbygrid">
+    <div class="panel">
+      <h3>⚓ Rozkaz wyjścia w morze</h3>
+      <p class="story">Konwój płynie przez północny Atlantyk. W głębinach czają się U-Booty, nad chmurami krąży zwiad lotniczy Luftwaffe. Ustaw swoją flotę i zatop przeciwnika, zanim on zatopi ciebie.</p>
+      <div class="row" style="margin-top:12px"><button class="btn brass" id="hostBtn">⚓ Załóż pokój — Gracz 1</button></div>
+      <p class="hint" style="margin-top:10px">Dostaniesz link zaproszenia — wyślij go koledze (iMessage, WhatsApp…). Gdy otworzy link, połączycie się bezpośrednio.</p>
+      <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+      <h3>📡 Mam kod od kolegi</h3>
+      <div class="row nowrap"><input class="code" id="joinInput" placeholder="Kod pokoju lub link" autocomplete="off" autocapitalize="characters" spellcheck="false"><button class="btn" id="joinBtn">Dołącz</button></div>
+      <div id="fileWarn"></div>
+    </div>
+    <div class="panel rules">
+      <h3>📜 Regulamin bitwy</h3>
+      <ul>
+        <li>Plansza 10×10 (A–J, 1–10). Każdy gracz ma:<br>
+          1× <b>Pancernik</b> (4 pola), 2× <b>Niszczyciel</b> (3), 3× <b>U-Boot</b> (2), 4× <b>Kuter</b> (1).</li>
+        <li>Okręty nie mogą na siebie nachodzić ani się stykać — nawet rogami.</li>
+        <li>Pierwszą salwę oddaje Gracz 1 (w rewanżach na zmianę).</li>
+        <li><b>Trafienie = kolejny strzał.</b> Strzelasz, dopóki nie spudłujesz — wtedy kolej przeciwnika.</li>
+        <li>Zatopiony okręt zostaje odsłonięty, a pola wokół niego oznaczone jako puste.</li>
+        <li>Wygrywa ten, kto pierwszy pośle na dno całą flotę wroga.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PLACEMENT -->
+<section class="screen" id="scrPlace">
+  <div class="placegrid">
+    <div>
+      <h2 style="text-align:center">Rozstaw flotę</h2>
+      <div class="board" id="placeBoard"></div>
+    </div>
+    <div class="panel">
+      <div id="invitePlace"></div>
+      <div class="hint" id="placeHint">Wybierz okręt z listy, potem dotknij pola na planszy. Dotknięcie postawionego okrętu podnosi go (możesz go też przeciągnąć).</div>
+      <div class="dock" id="dock"></div>
+      <div class="row">
+        <button class="btn" id="rotBtn">⟳ Obróć <span class="muted" id="rotLbl">(poziomo)</span></button>
+        <button class="btn" id="randBtn">🎲 Losuj ustawienie</button>
+        <button class="btn" id="clearBtn">🧹 Wyczyść</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn brass" id="readyBtn" style="flex:1;font-size:17px;padding:13px">GOTOWY DO WALKI</button>
+      </div>
+      <div class="oppstate" id="oppState"></div>
+    </div>
+  </div>
+</section>
+
+<!-- BATTLE -->
+<section class="screen" id="scrBattle">
+  <div id="inviteBattle"></div>
+  <div class="turnbar" id="turnbar"></div>
+  <div class="tabs" id="tabs">
+    <button data-tab="enemy" class="on">🎯 Wody wroga</button>
+    <button data-tab="mine">⚓ Moja flota<span class="dot" id="mineDot"></span></button>
+  </div>
+  <div class="boards">
+    <div class="bwrap on" id="wrapEnemy"><h3>🎯 Wody wroga</h3><div class="board" id="enemyBoard"></div><div class="tracker" id="trackEnemy"></div></div>
+    <div class="bwrap" id="wrapMine"><h3>⚓ Moja flota</h3><div class="board" id="myBoard"></div><div class="tracker" id="trackMine"></div></div>
+  </div>
+  <div class="log" id="log"></div>
+</section>
+</main>
+<footer>Połączenie peer-to-peer (WebRTC / PeerJS). Twoje ustawienie floty nie jest wysyłane przeciwnikowi przed końcem bitwy.</footer>
+
+<div class="overlay" id="overlay">
+  <div class="endcard" id="endcard">
+    <div class="mono muted" id="endTop">TELEGRAM · PILNE</div>
+    <div class="big" id="endBig">ZWYCIĘSTWO</div>
+    <p id="endTxt"></p>
+    <div class="stats" id="endStats"></div>
+    <div class="row" style="justify-content:center">
+      <button class="btn brass" id="rematchBtn">⚔ Rewanż</button>
+      <button class="btn" id="viewBtn">Pokaż plansze</button>
+    </div>
+    <p class="muted" id="rematchInfo" style="min-height:1.5em;font-size:12px"></p>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
+<script>window.Peer||document.write('<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js"><\/script>')</script>
+<script id="bs-logic">
+/* ===== Czysta logika gry (testowalna bez przeglądarki) ===== */
+var BS = (function(){
+  var N = 10;
+  var FLEET = [
+    {len:4, n:1, name:'Pancernik'},
+    {len:3, n:2, name:'Niszczyciel'},
+    {len:2, n:3, name:'U-Boot'},
+    {len:1, n:4, name:'Kuter'}
+  ];
+  var COLS = 'ABCDEFGHIJ';
+  function fleetList(){
+    var a = [], id = 0;
+    FLEET.forEach(function(f){ for (var i=0;i<f.n;i++) a.push({id:id++, len:f.len, name:f.name, no:i+1}); });
+    return a;
+  }
+  function totalCells(){ return fleetList().reduce(function(s,x){return s+x.len;},0); }
+  function inB(r,c){ return Number.isInteger(r) && Number.isInteger(c) && r>=0 && r<N && c>=0 && c<N; }
+  function cellsOf(s){ var a=[]; for (var i=0;i<s.len;i++) a.push(s.v ? [s.r+i, s.c] : [s.r, s.c+i]); return a; }
+  function pos(r,c){ return COLS[c] + (r+1); }
+  /* czy okręt (r,c,len,v) można postawić: w granicach, bez nachodzenia i bez stykania (także po skosie) */
+  function canPlace(placed, cand, ignoreId){
+    var cs = cellsOf(cand);
+    for (var i=0;i<cs.length;i++) if (!inB(cs[i][0], cs[i][1])) return false;
+    for (var j=0;j<placed.length;j++){
+      var s = placed[j]; if (s.id === ignoreId) continue;
+      var sc = cellsOf(s);
+      for (var a=0;a<sc.length;a++) for (var b=0;b<cs.length;b++)
+        if (Math.abs(sc[a][0]-cs[b][0])<=1 && Math.abs(sc[a][1]-cs[b][1])<=1) return false;
+    }
+    return true;
+  }
+  function randomFleet(rng){
+    rng = rng || Math.random;
+    for (var attempt=0; attempt<500; attempt++){
+      var placed = [], ok = true, list = fleetList();
+      for (var i=0;i<list.length && ok;i++){
+        var s = list[i], done = false;
+        for (var t=0;t<400 && !done;t++){
+          var v = rng() < .5;
+          var r = Math.floor(rng() * (v ? N-s.len+1 : N));
+          var c = Math.floor(rng() * (v ? N : N-s.len+1));
+          var cand = {id:s.id, len:s.len, r:r, c:c, v:v};
+          if (canPlace(placed, cand)) { placed.push(cand); done = true; }
+        }
+        if (!done) ok = false;
+      }
+      if (ok) return placed;
+    }
+    throw new Error('Nie udało się wylosować floty');
+  }
+  function validateFleet(ships){
+    if (!Array.isArray(ships)) return false;
+    var want = fleetList();
+    if (ships.length !== want.length) return false;
+    var ids = {};
+    for (var i=0;i<ships.length;i++){
+      var s = ships[i], w = want[s.id];
+      if (!w || w.len !== s.len || ids[s.id]) return false;
+      ids[s.id] = 1;
+      if (typeof s.v !== 'boolean') return false;
+    }
+    var acc = [];
+    for (var k=0;k<ships.length;k++){ if (!canPlace(acc, ships[k])) return false; acc.push(ships[k]); }
+    return true;
+  }
+  /* pola wokół okrętu (do automatycznego oznaczania po zatopieniu) */
+  function halo(s){
+    var own = {}, out = [], cs = cellsOf(s);
+    cs.forEach(function(p){ own[p[0]+','+p[1]] = 1; });
+    cs.forEach(function(p){
+      for (var dr=-1;dr<=1;dr++) for (var dc=-1;dc<=1;dc++){
+        var r=p[0]+dr, c=p[1]+dc, k=r+','+c;
+        if (inB(r,c) && !own[k]) { own[k]=1; out.push([r,c]); }
+      }
+    });
+    return out;
+  }
+  function shipAt(ships, r, c){
+    for (var i=0;i<ships.length;i++){
+      var cs = cellsOf(ships[i]);
+      for (var j=0;j<cs.length;j++) if (cs[j][0]===r && cs[j][1]===c) return ships[i];
+    }
+    return null;
+  }
+  function newDefense(ships){
+    return { ships: ships.map(function(s){ return {id:s.id,len:s.len,r:s.r,c:s.c,v:s.v,hits:0}; }), shots:{} };
+  }
+  /* obrońca liczy wynik strzału na własnej planszy */
+  function receiveShot(def, r, c){
+    if (!inB(r,c)) return null;
+    var k = r+','+c;
+    if (def.shots[k]) { var d = JSON.parse(JSON.stringify(def.shots[k])); d.dup = true; return d; }
+    var res = {r:r, c:c, res:'miss'};
+    var s = shipAt(def.ships, r, c);
+    if (s){
+      s.hits++;
+      res = s.hits >= s.len ? {r:r, c:c, res:'sunk', ship:{id:s.id,len:s.len,r:s.r,c:s.c,v:s.v}} : {r:r, c:c, res:'hit'};
+    }
+    res.allSunk = def.ships.every(function(x){ return x.hits >= x.len; });
+    def.shots[k] = res;
+    return JSON.parse(JSON.stringify(res));
+  }
+  /* kto strzela po wyniku: trafienie/zatopienie = ten sam gracz, pudło = zmiana */
+  function nextShooter(shooter, res){ return res === 'miss' ? (shooter === 'me' ? 'opp' : 'me') : shooter; }
+  function firstShooter(gameNo){ return gameNo % 2 === 1 ? 'host' : 'guest'; }
+  /* weryfikacja po bitwie: czy meldunki przeciwnika zgadzały się z jego ujawnioną planszą */
+  function verifyResults(ships, attack){
+    if (!validateFleet(ships)) return false;
+    for (var k in attack){
+      var a = attack[k]; if (a.res === 'auto') { var p0=k.split(',').map(Number); if (shipAt(ships,p0[0],p0[1])) return false; continue; }
+      var p = k.split(',').map(Number), s = shipAt(ships, p[0], p[1]);
+      if (a.res === 'miss' && s) return false;
+      if ((a.res === 'hit' || a.res === 'sunk') && !s) return false;
+      if (a.res === 'sunk'){
+        var all = cellsOf(s).every(function(q){ var x = attack[q[0]+','+q[1]]; return x && (x.res==='hit' || x.res==='sunk'); });
+        if (!all) return false;
+      }
+    }
+    return true;
+  }
+  return {N:N, FLEET:FLEET, COLS:COLS, fleetList:fleetList, totalCells:totalCells, inB:inB, cellsOf:cellsOf, pos:pos,
+    canPlace:canPlace, randomFleet:randomFleet, validateFleet:validateFleet, halo:halo, shipAt:shipAt,
+    newDefense:newDefense, receiveShot:receiveShot, nextShooter:nextShooter, firstShooter:firstShooter, verifyResults:verifyResults};
+})();
+if (typeof module !== 'undefined') module.exports = BS;
+</script>
+<script>
+(function(){
+'use strict';
+var N = BS.N, $ = function(id){ return document.getElementById(id); };
+var PREFIX = 'statki-ww2-';
+var APP = 'statki-ww2-v1';
+var STORE = 'statki-ww2-state';
+var PEER_OPTS = { debug: 1 };
+
+/* ---------- Grafika okrętów (SVG inline, widok z góry, dziób w prawo) ---------- */
+function turret(x, y, dir, r){
+  r = r || 12; var bx = dir > 0 ? x : x - 34;
+  return '<rect x="'+bx+'" y="'+(y-6)+'" width="34" height="4" rx="1" fill="#252b31"/><rect x="'+bx+'" y="'+(y+2)+'" width="34" height="4" rx="1" fill="#252b31"/>' +
+         '<circle cx="'+x+'" cy="'+y+'" r="'+r+'" fill="#55636e" stroke="#1d252c" stroke-width="2.5"/><circle cx="'+x+'" cy="'+y+'" r="'+(r*.45)+'" fill="#3d4952"/>';
+}
+function shipSVG(len, vert, kind){
+  var W = len*100, en = kind === 'enemy';
+  var hull = en ? '#8a6a5c' : '#6c7e8c', deck = en ? '#b39280' : '#a3b2bc', dark = '#1d262e', g = '';
+  if (len === 4){
+    g = '<path d="M8,50 C20,24 55,17 92,17 L318,17 C360,19 386,34 397,50 C386,66 360,81 318,83 L92,83 C55,83 20,76 8,50Z" fill="'+hull+'" stroke="'+dark+'" stroke-width="3"/>' +
+        '<path d="M40,50 C52,33 72,29 98,29 L312,29 C344,31 364,40 375,50 C364,60 344,69 312,71 L98,71 C72,71 52,67 40,50Z" fill="'+deck+'"/>' +
+        '<path d="M98,29 L312,29 M98,71 L312,71" stroke="'+dark+'" stroke-opacity=".35" stroke-width="2"/>' +
+        turret(82,50,-1,13) + turret(128,50,-1,13) + turret(292,50,1,13) + turret(338,50,1,13) +
+        '<rect x="160" y="33" width="100" height="34" rx="6" fill="'+hull+'" stroke="'+dark+'" stroke-width="2.5"/>' +
+        '<ellipse cx="195" cy="50" rx="14" ry="11" fill="#2b2b2b" stroke="'+dark+'" stroke-width="2"/>' +
+        '<rect x="222" y="39" width="28" height="22" rx="3" fill="'+deck+'" stroke="'+dark+'" stroke-width="2"/>' +
+        '<circle cx="171" cy="38" r="4" fill="#3d4952"/><circle cx="171" cy="62" r="4" fill="#3d4952"/>';
+  } else if (len === 3){
+    g = '<path d="M8,50 C20,30 50,25 80,25 L228,25 C266,27 286,38 296,50 C286,62 266,73 228,75 L80,75 C50,75 20,70 8,50Z" fill="'+hull+'" stroke="'+dark+'" stroke-width="3"/>' +
+        '<path d="M36,50 C48,38 64,35 84,35 L226,35 C252,37 266,43 274,50 C266,57 252,63 226,65 L84,65 C64,65 48,62 36,50Z" fill="'+deck+'"/>' +
+        turret(62,50,-1,10) + turret(250,50,1,10) +
+        '<rect x="90" y="44" width="34" height="12" rx="3" fill="#3d4952"/>' +
+        '<ellipse cx="145" cy="50" rx="11" ry="9" fill="#2b2b2b" stroke="'+dark+'" stroke-width="2"/><ellipse cx="172" cy="50" rx="11" ry="9" fill="#2b2b2b" stroke="'+dark+'" stroke-width="2"/>' +
+        '<rect x="192" y="38" width="30" height="24" rx="4" fill="'+hull+'" stroke="'+dark+'" stroke-width="2"/>';
+  } else if (len === 2){
+    var h2 = en ? '#6e5248' : '#4f5e69';
+    g = '<path d="M6,50 C30,33 70,31 112,31 C152,32 182,40 196,50 C182,60 152,68 112,69 C70,69 30,67 6,50Z" fill="'+h2+'" stroke="'+dark+'" stroke-width="3"/>' +
+        '<rect x="32" y="46" width="140" height="8" rx="4" fill="'+deck+'" opacity=".55"/>' +
+        '<rect x="84" y="37" width="44" height="26" rx="12" fill="'+hull+'" stroke="'+dark+'" stroke-width="2.5"/>' +
+        '<circle cx="114" cy="50" r="4" fill="#1a1a1a"/><circle cx="98" cy="50" r="3" fill="#1a1a1a"/>' +
+        '<circle cx="150" cy="50" r="6" fill="#3d4952" stroke="'+dark+'" stroke-width="1.5"/><rect x="150" y="48" width="22" height="4" fill="#252b31"/>';
+  } else {
+    g = '<path d="M8,50 C15,31 34,27 54,27 C76,29 88,40 95,50 C88,60 76,71 54,73 C34,73 15,69 8,50Z" fill="'+hull+'" stroke="'+dark+'" stroke-width="3"/>' +
+        '<path d="M22,50 C26,40 38,37 52,37 C66,38 76,44 80,50 C76,56 66,62 52,63 C38,63 26,60 22,50Z" fill="'+deck+'"/>' +
+        '<rect x="28" y="40" width="28" height="20" rx="4" fill="'+hull+'" stroke="'+dark+'" stroke-width="2"/>' +
+        '<circle cx="70" cy="50" r="5" fill="#3d4952" stroke="'+dark+'" stroke-width="1.5"/><rect x="70" y="48.5" width="14" height="3" fill="#252b31"/>';
+  }
+  if (vert) return '<svg viewBox="0 0 100 '+W+'" preserveAspectRatio="none"><g transform="translate(100,0) rotate(90)">'+g+'</g></svg>';
+  return '<svg viewBox="0 0 '+W+' 100" preserveAspectRatio="none">'+g+'</svg>';
+}
+function miniSVG(len, h){ return shipSVG(len, false, 'mine').replace('preserveAspectRatio="none"', 'width="'+(len*h)+'" height="'+h+'"'); }
+function shipName(id){ var s = BS.fleetList()[id]; return s ? s.name + (s.len < 4 ? ' ' + roman(s.no) : '') : 'okręt'; }
+function roman(n){ return ['','I','II','III','IV'][n] || n; }
+
+/* ---------- Dźwięk (WebAudio, bez plików) ---------- */
+var SFX = {
+  ctx:null, muted: localStorage.getItem('statki-mute') === '1',
+  init: function(){
+    try {
+      if (this.ctx){ if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+      var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      var c = this.ctx = new AC();
+      this.master = c.createGain(); this.master.gain.value = .55; this.master.connect(c.destination);
+      var len = c.sampleRate * 2; this.nb = c.createBuffer(1, len, c.sampleRate);
+      var d = this.nb.getChannelData(0); for (var i=0;i<len;i++) d[i] = Math.random()*2-1;
+      var o = c.createBufferSource(); o.buffer = c.createBuffer(1,1,22050); o.connect(c.destination); o.start(0);
+    } catch(e){}
+  },
+  noise: function(t, dur, type, f, gain, q){
+    var c = this.ctx, s = c.createBufferSource(), fl = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = this.nb; fl.type = type; fl.frequency.value = f; fl.Q.value = q || 1;
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(.001, t+dur);
+    s.connect(fl); fl.connect(g); g.connect(this.master); s.start(t, Math.random()); s.stop(t+dur+.05);
+  },
+  tone: function(t, dur, f, gain, type, f2){
+    var c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type || 'sine'; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t+dur);
+    g.gain.setValueAtTime(.001, t); g.gain.exponentialRampToValueAtTime(gain, t+.012); g.gain.exponentialRampToValueAtTime(.001, t+dur);
+    o.connect(g); g.connect(this.master); o.start(t); o.stop(t+dur+.05);
+  },
+  play: function(n){
+    if (this.muted || !this.ctx) return;
+    var t = this.ctx.currentTime + .01, self = this;
+    try {
+      switch(n){
+        case 'fire': this.noise(t,.4,'lowpass',800,1); this.tone(t,.35,110,.7,'sine',38); break;
+        case 'whistle': this.tone(t,.55,1500,.12,'sine',420); break;
+        case 'splash': this.noise(t,.8,'bandpass',1500,.55,.6); this.noise(t+.06,.5,'highpass',3500,.2); break;
+        case 'hit': this.noise(t,1.1,'lowpass',450,1.1); this.tone(t,.7,85,.9,'sine',28); this.noise(t+.12,.7,'bandpass',1100,.3); break;
+        case 'sunk': this.play('hit'); this.noise(t+.5,1.8,'lowpass',260,.7); this.tone(t+.5,1.8,180,.18,'sawtooth',45); break;
+        case 'place': this.tone(t,.09,170,.35,'triangle',90); this.noise(t,.06,'bandpass',900,.25); break;
+        case 'err': this.tone(t,.16,150,.25,'square'); break;
+        case 'beep': [0,.09,.18,.36].forEach(function(d,i){ self.tone(t+d, i===3?.17:.06, 760, .12, 'square'); }); break;
+        case 'ping': this.tone(t,1.1,1180,.28,'sine'); this.tone(t+.55,.9,1180,.08,'sine'); break;
+        case 'win': [392,523,659,784].forEach(function(f,i){ self.tone(t+i*.16,.5,f,.18,'square'); }); this.tone(t+.7,1.2,1046,.18,'square'); break;
+        case 'lose': [392,330,262,196].forEach(function(f,i){ self.tone(t+i*.28,.6,f,.18,'triangle'); }); break;
+      }
+    } catch(e){}
+  }
+};
+document.addEventListener('pointerdown', function(){ SFX.init(); }, {passive:true});
+document.addEventListener('touchend', function(){ SFX.init(); }, {passive:true});
+
+/* ---------- Stan ---------- */
+var S = {
+  role:null, room:null, phase:'lobby',
+  ships:[], sel:0, vert:false, grab:0, hover:null, drag:null,
+  myReady:false, oppReady:false, connected:false, everConnected:false,
+  def:null, attack:{}, turn:null, pending:null, oppSunk:[], oppReveal:null, verified:null,
+  gameNo:1, result:null, score:{me:0,opp:0}, rematchMe:false, rematchOpp:false,
+  stats:{shots:0,hits:0}, log:[],
+  peer:null, conn:null, lastSeen:0, tab:'enemy', tabPinned:false
+};
+var PERSIST = ['role','room','phase','ships','vert','myReady','oppReady','def','attack','turn','pending','oppSunk','oppReveal','verified','gameNo','result','score','rematchMe','rematchOpp','stats','log'];
+function save(){
+  try { var o = {}; PERSIST.forEach(function(k){ o[k] = S[k]; }); o.t = Date.now(); sessionStorage.setItem(STORE, JSON.stringify(o)); } catch(e){}
+}
+function loadSaved(){
+  try { var o = JSON.parse(sessionStorage.getItem(STORE) || 'null'); if (o && Date.now() - o.t < 6*3600e3) return o; } catch(e){}
+  return null;
+}
+
+/* ---------- Pomocnicze UI ---------- */
+var toastT;
+function toast(msg){ var t = $('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('on'); }, 2600); }
+function setNet(state, txt){ $('lamp').className = 'lamp ' + state; $('netTxt').textContent = txt; }
+function showScreen(name){
+  ['scrLobby','scrPlace','scrBattle'].forEach(function(id){ $(id).classList.toggle('on', id === name); });
+  $('quitBtn').style.display = name === 'scrLobby' ? 'none' : '';
+  if (S._screen !== name){ S._screen = name; window.scrollTo(0, 0); }
+}
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function hhmm(){ var d = new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+function log(txt, cls){
+  S.log.unshift({t:hhmm(), x:txt, c:cls||''}); if (S.log.length > 60) S.log.length = 60;
+  renderLog(); SFX.play('beep');
+}
+function renderLog(){
+  var h = '<div class="hd"><span>✉ DZIENNIK RADIOWY</span><span>'+(S.role==='host'?'GRACZ 1':'GRACZ 2')+' · '+S.score.me+':'+S.score.opp+'</span></div>';
+  S.log.forEach(function(e){ h += '<div class="e '+e.c+'"><time>'+e.t+'</time>'+esc(e.x)+'</div>'; });
+  $('log').innerHTML = h;
+}
+function esc(s){ return String(s).replace(/[&<>"]/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]; }); }
+
+/* ---------- Plansze ---------- */
+function buildBoard(el){
+  el.innerHTML = '';
+  var corner = document.createElement('div'); corner.className = 'lbl'; corner.style.gridArea = '1/1'; el.appendChild(corner);
+  for (var i=0;i<N;i++){
+    var a = document.createElement('div'); a.className = 'lbl'; a.textContent = BS.COLS[i]; a.style.gridArea = '1/' + (i+2); el.appendChild(a);
+    var b = document.createElement('div'); b.className = 'lbl'; b.textContent = i+1; b.style.gridArea = (i+2) + '/1'; el.appendChild(b);
+  }
+  var w = document.createElement('div'); w.className = 'water'; el.appendChild(w);
+  el._cells = [];
+  for (var r=0;r<N;r++){ el._cells.push([]); for (var c=0;c<N;c++){ var d = document.createElement('div'); d.className = 'cell'; d.dataset.r = r; d.dataset.c = c; w.appendChild(d); el._cells[r].push(d); } }
+  ['_ships','_marks','_fx'].forEach(function(k){ var l = document.createElement('div'); l.className = 'layer'; w.appendChild(l); el[k] = l; });
+  el._water = w;
+}
+function cellAt(el, e){
+  var rc = el._water.getBoundingClientRect();
+  var x = e.clientX - rc.left, y = e.clientY - rc.top;
+  if (x < 0 || y < 0 || x >= rc.width || y >= rc.height) return null;
+  return { r: Math.min(N-1, Math.floor(y / rc.height * N)), c: Math.min(N-1, Math.floor(x / rc.width * N)) };
+}
+function drawShips(el, list){
+  var h = '';
+  list.forEach(function(s){
+    var st = 'left:'+(s.c*10)+'%;top:'+(s.r*10)+'%;width:'+((s.v?1:s.len)*10)+'%;height:'+((s.v?s.len:1)*10)+'%';
+    h += '<div class="ship '+(s.cls||'')+'" style="'+st+'">'+shipSVG(s.len, s.v, s.kind)+'</div>';
+  });
+  el._ships.innerHTML = h;
+}
+function drawMarks(el, marks){
+  var h = '';
+  marks.forEach(function(m){ h += '<div class="mk '+m.k+'" style="left:'+(m.c*10)+'%;top:'+(m.r*10)+'%"></div>'; });
+  el._marks.innerHTML = h;
+}
+function fx(el, r, c, kind){
+  var d = document.createElement('div'); d.className = 'fx ' + kind; d.style.left = (c*10)+'%'; d.style.top = (r*10)+'%';
+  el._fx.appendChild(d); setTimeout(function(){ d.remove(); }, 1300);
+  if (kind === 'boom'){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+}
+
+/* ---------- Ustawianie floty ---------- */
+var pb = $('placeBoard'), eb = $('enemyBoard'), mb = $('myBoard');
+buildBoard(pb); buildBoard(eb); buildBoard(mb);
+
+function unplaced(){ var ids = {}; S.ships.forEach(function(s){ ids[s.id] = 1; }); return BS.fleetList().filter(function(s){ return !ids[s.id]; }); }
+function selectNext(){ var u = unplaced(); S.sel = u.length ? u[0].id : null; S.grab = 0; }
+function candidate(p){
+  if (S.sel == null || !p) return null;
+  var f = BS.fleetList()[S.sel], v = S.vert;
+  var r = v ? p.r - S.grab : p.r, c = v ? p.c : p.c - S.grab;
+  r = Math.max(0, Math.min(r, N - (v ? f.len : 1)));
+  c = Math.max(0, Math.min(c, N - (v ? 1 : f.len)));
+  return {id:f.id, len:f.len, r:r, c:c, v:v};
+}
+function renderPlace(){
+  var locked = S.myReady;
+  drawShips(pb, S.ships.map(function(s){ return {id:s.id,len:s.len,r:s.r,c:s.c,v:s.v,kind:'mine'}; }));
+  // podgląd
+  for (var r=0;r<N;r++) for (var c=0;c<N;c++) pb._cells[r][c].className = 'cell';
+  if (!locked){
+    S.ships.forEach(function(s){ BS.halo(s).forEach(function(p){ pb._cells[p[0]][p[1]].classList.add('zone'); }); });
+    var cand = candidate(S.hover);
+    if (cand){
+      var ok = BS.canPlace(S.ships, cand);
+      BS.cellsOf(cand).forEach(function(p){ pb._cells[p[0]][p[1]].className = 'cell ' + (ok ? 'pv-ok' : 'pv-bad'); });
+    }
+  }
+  // dok
+  var placedIds = {}; S.ships.forEach(function(s){ placedIds[s.id] = 1; });
+  var h = '';
+  BS.fleetList().forEach(function(s){
+    h += '<button class="dk'+(S.sel===s.id?' sel':'')+(placedIds[s.id]?' done':'')+'" data-id="'+s.id+'"'+(locked?' disabled':'')+'><span class="ic">'+miniSVG(s.len,20)+'</span><span>'+shipName(s.id)+'<small>'+s.len+' '+(s.len===1?'pole':'pola')+(placedIds[s.id]?' · na pozycji':'')+'</small></span></button>';
+  });
+  $('dock').innerHTML = h;
+  $('rotLbl').textContent = S.vert ? '(pionowo)' : '(poziomo)';
+  var all = S.ships.length === BS.fleetList().length;
+  ['rotBtn','randBtn','clearBtn'].forEach(function(id){ $(id).disabled = locked; });
+  var rb = $('readyBtn');
+  if (locked){ rb.textContent = '↺ Zmień ustawienie'; rb.className = 'btn'; rb.disabled = false; }
+  else { rb.textContent = all ? 'GOTOWY DO WALKI' : 'Rozstaw jeszcze ' + (BS.fleetList().length - S.ships.length) + ' okr.'; rb.className = 'btn brass'; rb.disabled = !all; }
+  $('placeHint').style.display = locked ? 'none' : '';
+  var os = '';
+  if (!S.connected) os = S.role === 'host' ? '⏳ Czekam, aż drugi gracz otworzy link…' : '⏳ Łączę z pokojem…';
+  else os = S.oppReady ? '✅ Przeciwnik: flota gotowa do walki' : '🛠 Przeciwnik: rozstawia flotę…';
+  if (S.myReady) os += '<br>✅ Ty: gotowy — ' + (S.oppReady ? 'start!' : 'czekamy na przeciwnika');
+  $('oppState').innerHTML = os;
+  renderInvite();
+}
+function tryPlace(p){
+  var cand = candidate(p); if (!cand) return;
+  if (BS.canPlace(S.ships, cand)){
+    S.ships.push(cand); SFX.play('place'); selectNext(); if (S.sel != null) S.hover = null;
+    save();
+  } else { SFX.play('err'); toast('Okręty nie mogą się stykać ani nachodzić na siebie'); }
+  renderPlace();
+}
+pb.addEventListener('pointerdown', function(e){
+  if (S.phase !== 'place' || S.myReady) return;
+  var p = cellAt(pb, e); if (!p) return;
+  var hit = BS.shipAt(S.ships, p.r, p.c);
+  if (hit){
+    S.ships = S.ships.filter(function(s){ return s !== hit; });
+    S.sel = hit.id; S.vert = hit.v; S.grab = hit.v ? p.r - hit.r : p.c - hit.c;
+    S.drag = {start:p, moved:false, orig:hit};
+  } else if (S.sel != null){
+    S.drag = {start:p, moved:false, orig:null};
+  } else return;
+  S.hover = p; e.preventDefault();
+  try { pb.setPointerCapture(e.pointerId); } catch(x){}
+  renderPlace();
+});
+pb.addEventListener('pointermove', function(e){
+  if (S.phase !== 'place' || S.myReady || S.sel == null) return;
+  var p = cellAt(pb, e);
+  if (!p){ if (!S.drag && S.hover){ S.hover = null; renderPlace(); } return; }
+  if (S.drag && (p.r !== S.drag.start.r || p.c !== S.drag.start.c)) S.drag.moved = true;
+  if (!S.hover || p.r !== S.hover.r || p.c !== S.hover.c){ S.hover = p; renderPlace(); }
+});
+pb.addEventListener('pointerup', function(e){
+  if (!S.drag) return;
+  var d = S.drag; S.drag = null;
+  if (d.orig && !d.moved){ toast('Okręt podniesiony — dotknij pola, aby go postawić (⟳ obraca)'); renderPlace(); return; }
+  tryPlace(S.hover);
+});
+pb.addEventListener('pointercancel', function(){ S.drag = null; });
+pb.addEventListener('pointerleave', function(e){ if (e.pointerType === 'mouse' && !S.drag){ S.hover = null; renderPlace(); } });
+$('dock').addEventListener('click', function(e){
+  var b = e.target.closest('.dk'); if (!b || S.myReady) return;
+  var id = +b.dataset.id;
+  var cur = S.ships.filter(function(s){ return s.id === id; })[0];
+  if (cur){ S.ships = S.ships.filter(function(s){ return s.id !== id; }); S.vert = cur.v; S.hover = {r:cur.r, c:cur.c}; }
+  S.sel = id; S.grab = 0; SFX.play('place'); renderPlace();
+});
+function rotate(){
+  if (S.myReady) return;
+  if (S.sel == null){ toast('Najpierw wybierz okręt (dotknij go na planszy lub liście)'); return; }
+  S.vert = !S.vert; S.grab = 0; renderPlace();
+}
+$('rotBtn').onclick = rotate;
+document.addEventListener('keydown', function(e){ if ((e.key === 'r' || e.key === 'R') && S.phase === 'place' && document.activeElement.tagName !== 'INPUT') rotate(); });
+$('randBtn').onclick = function(){ S.ships = BS.randomFleet(); S.sel = null; S.hover = null; SFX.play('place'); save(); renderPlace(); };
+$('clearBtn').onclick = function(){ S.ships = []; selectNext(); S.hover = null; save(); renderPlace(); };
+$('readyBtn').onclick = function(){
+  if (S.myReady){ S.myReady = false; send({t:'unready'}); save(); renderPlace(); return; }
+  if (!BS.validateFleet(S.ships)){ toast('Ustawienie floty jest niepoprawne'); return; }
+  S.myReady = true; S.sel = null; S.hover = null;
+  send({t:'ready'}); SFX.play('ping');
+  save(); renderPlace(); maybeStart();
+};
+
+/* ---------- Bitwa ---------- */
+function maybeStart(){
+  if (S.phase !== 'place' || !S.myReady || !S.oppReady || !S.connected) return;
+  S.phase = 'battle'; S.def = BS.newDefense(S.ships); S.attack = {}; S.pending = null; S.oppSunk = [];
+  S.stats = {shots:0, hits:0}; S.oppReveal = null; S.verified = null;
+  S.turn = BS.firstShooter(S.gameNo) === S.role ? 'me' : 'opp';
+  showScreen('scrBattle');
+  log('BITWA NR '+S.gameNo+' ROZPOCZĘTA STOP', 'air');
+  log(pick(['ZWIAD LOTNICZY LUFTWAFFE DONOSI: FLOTA WROGA W SZYKU BOJOWYM STOP','CONDOR NAD KWADRATEM BOJOWYM STOP WIDOCZNOŚĆ DOBRA STOP','ZWIAD LOTNICZY DONOSI: WRÓG MILCZY W ETERZE STOP OSTROŻNIE']), 'air');
+  log(S.turn === 'me' ? 'ROZKAZ: OTWORZYĆ OGIEŃ STOP PIERWSZA SALWA NALEŻY DO NAS' : 'WRÓG STRZELA PIERWSZY STOP WSZYSCY NA STANOWISKA', S.turn==='me'?'me':'opp');
+  if (S.turn === 'me') SFX.play('ping');
+  S.tabPinned = false; autoTab(0);
+  save(); renderBattle();
+}
+function shoot(r, c){
+  if (S.phase !== 'battle') return;
+  if (!S.connected){ toast('Brak łączności z przeciwnikiem — czekam na połączenie'); return; }
+  if (S.turn !== 'me'){ toast('Teraz strzela przeciwnik'); return; }
+  if (S.pending) return;
+  if (S.attack[r+','+c]){ toast('W to pole już strzelano'); return; }
+  S.pending = {r:r, c:c}; S.stats.shots++;
+  send({t:'shot', r:r, c:c}); SFX.play('fire');
+  save(); renderBattle();
+}
+eb.addEventListener('click', function(e){
+  var p = cellAt(eb, e); if (p) shoot(p.r, p.c);
+});
+function onShot(m){
+  if (m.g !== S.gameNo || !S.def) return;
+  var r = m.r, c = m.c; if (!BS.inB(r, c)) return;
+  var k = r+','+c;
+  if (S.def.shots[k]){ var d = JSON.parse(JSON.stringify(S.def.shots[k])); d.t = 'result'; d.dup = true; send(d); return; }
+  if (S.phase !== 'battle' || S.turn !== 'opp') return; // strzał poza kolejką — ignorujemy
+  var res = BS.receiveShot(S.def, r, c), P = BS.pos(r, c);
+  SFX.play('whistle');
+  setTimeout(function(){
+    if (res.res === 'miss'){ fx(mb, r, c, 'splash'); SFX.play('splash'); }
+    else { fx(mb, r, c, 'boom'); SFX.play(res.res === 'sunk' ? 'sunk' : 'hit'); }
+  }, 350);
+  if (res.res === 'miss') log(pick(['POCISK WROGA W WODZIE '+P+' STOP NASZA KOLEJ','WRÓG PUDŁUJE '+P+' STOP TYLKO GEJZER WODY','SALWA WROGA CHYBIONA '+P+' STOP ODPOWIADAMY OGNIEM']), 'me');
+  else if (res.res === 'hit') log(pick(['ALARM '+P+' OBERWALIŚMY STOP POŻAR NA POKŁADZIE','TRAFIENIE W NASZ OKRĘT '+P+' STOP EKIPY RATUNKOWE NA STANOWISKA','WRÓG TRAFIA '+P+' STOP PRZECIEK W KADŁUBIE']), 'opp');
+  else log('TRACIMY '+shipName(res.ship.id).toUpperCase()+' ('+P+') STOP CZEŚĆ ICH PAMIĘCI', 'opp');
+  S.turn = BS.nextShooter('opp', res.res);
+  var out = JSON.parse(JSON.stringify(res)); out.t = 'result'; send(out);
+  if (res.allSunk) endGame('lose');
+  else if (S.turn === 'me'){ SFX.play('ping'); autoTab(900); }
+  save(); renderBattle();
+  if (!res.allSunk && res.res !== 'miss') flagMine();
+}
+function onResult(m){
+  if (m.g !== S.gameNo || !S.pending || S.pending.r !== m.r || S.pending.c !== m.c) return;
+  if (['miss','hit','sunk'].indexOf(m.res) < 0) return;
+  S.pending = null;
+  var r = m.r, c = m.c, P = BS.pos(r, c);
+  S.attack[r+','+c] = {res: m.res};
+  if (m.res === 'miss'){
+    fx(eb, r, c, 'splash'); SFX.play('splash');
+    log(pick(['PUDŁO '+P+' STOP TYLKO WODA I MEWY','CHYBIONE '+P+' STOP KOREKTA OGNIA','SALWA W WODĘ '+P+' STOP WRÓG PRZEJMUJE INICJATYWĘ']), 'opp');
+  } else {
+    S.stats.hits++;
+    fx(eb, r, c, 'boom');
+    if (m.res === 'sunk' && m.ship && BS.inB(m.ship.r, m.ship.c)){
+      SFX.play('sunk');
+      S.oppSunk.push(m.ship);
+      BS.halo(m.ship).forEach(function(q){ var k = q[0]+','+q[1]; if (!S.attack[k]) S.attack[k] = {res:'auto'}; });
+      log(shipName(m.ship.id).toUpperCase()+' WROGA IDZIE NA DNO ('+P+') STOP ZATOPIONY!', 'me');
+      if (!m.allSunk && Math.random() < .5) log(pick(['ZWIAD LOTNICZY DONOSI: PLAMA ROPY NA WODZIE STOP ROZBITKOWIE W WODZIE','LUFTWAFFE POTWIERDZA ZATOPIENIE STOP SZUKAĆ DALEJ']), 'air');
+    } else {
+      SFX.play('hit');
+      log(pick(['BEZPOŚREDNIE TRAFIENIE '+P+' STOP STRZELAJ DALEJ','TRAFIONY '+P+' STOP OGIEŃ NA POKŁADZIE WROGA','JEST TRAFIENIE '+P+' STOP KONTYNUOWAĆ OSTRZAŁ']), 'me');
+    }
+  }
+  S.turn = BS.nextShooter('me', m.res);
+  if (m.allSunk) endGame('win');
+  else if (S.turn === 'opp') autoTab(1400);
+  save(); renderBattle();
+}
+function endGame(res){
+  if (S.phase === 'over') return;
+  S.phase = 'over'; S.result = res; S.turn = null;
+  if (res === 'win') S.score.me++; else S.score.opp++;
+  log(res === 'win' ? 'FLOTA WROGA ZNISZCZONA STOP ZWYCIĘSTWO STOP WRACAMY DO PORTU' : 'NASZA FLOTA SPOCZYWA NA DNIE STOP KONIEC NADAWANIA', res === 'win' ? 'me' : 'opp');
+  send({t:'reveal', ships:S.ships});
+  setTimeout(function(){ SFX.play(res); showOverlay(); }, 1300);
+  save();
+}
+function onReveal(m){
+  if (m.g !== S.gameNo || S.phase !== 'over' || !Array.isArray(m.ships)) return;
+  S.oppReveal = m.ships.filter(function(s){ return s && BS.inB(s.r, s.c) && s.len >= 1 && s.len <= 4; });
+  S.verified = BS.verifyResults(S.oppReveal, S.attack);
+  if (!S.verified) log('UWAGA: UJAWNIONA PLANSZA PRZECIWNIKA NIE ZGADZA SIĘ Z MELDUNKAMI!', 'opp');
+  else log('KONTROLA POWOJENNA: MELDUNKI PRZECIWNIKA ZGODNE Z PLANSZĄ STOP', 'air');
+  save(); renderBattle(); if ($('overlay').classList.contains('on')) showOverlay();
+}
+function showOverlay(){
+  var win = S.result === 'win';
+  $('endcard').className = 'endcard ' + (win ? 'win' : 'lose');
+  $('endBig').textContent = win ? 'ZWYCIĘSTWO' : 'PORAŻKA';
+  $('endTxt').textContent = win ? 'Ostatni okręt wroga znika pod falami Atlantyku. Admiralicja przesyła gratulacje.' : 'Nasza flota spoczywa na dnie. Wróg panuje na Atlantyku… na razie.';
+  var acc = S.stats.shots ? Math.round(S.stats.hits / S.stats.shots * 100) : 0;
+  $('endStats').innerHTML = '<div><b>'+S.stats.shots+'</b>salw</div><div><b>'+acc+'%</b>celność</div><div><b>'+S.score.me+':'+S.score.opp+'</b>wynik meczu</div>';
+  $('rematchBtn').disabled = S.rematchMe;
+  $('rematchInfo').textContent = S.rematchMe ? (S.rematchOpp ? '' : 'Czekam na zgodę przeciwnika…') : (S.rematchOpp ? 'Przeciwnik chce rewanżu!' : '') + (S.verified === false ? ' ⚠ Plansza przeciwnika niezgodna z meldunkami!' : '');
+  $('overlay').classList.add('on');
+}
+$('viewBtn').onclick = function(){ $('overlay').classList.remove('on'); setTab('enemy', true); renderBattle(); };
+$('rematchBtn').onclick = function(){ S.rematchMe = true; send({t:'rematch'}); save(); showOverlay(); maybeRematch(); renderBattle(); };
+function maybeRematch(){
+  if (!(S.rematchMe && S.rematchOpp && S.phase === 'over')) return;
+  S.gameNo++; S.phase = 'place'; S.myReady = false; S.oppReady = false; S.def = null; S.attack = {}; S.pending = null;
+  S.oppSunk = []; S.oppReveal = null; S.verified = null; S.rematchMe = false; S.rematchOpp = false; S.result = null; S.turn = null;
+  S.sel = null; S.hover = null;
+  $('overlay').classList.remove('on');
+  log('REWANŻ STOP FLOTA WRACA NA POZYCJE STOP ' + (BS.firstShooter(S.gameNo) === S.role ? 'TYM RAZEM ZACZYNAMY MY' : 'TYM RAZEM ZACZYNA WRÓG'), 'air');
+  showScreen('scrPlace'); save(); renderPlace();
+}
+function setTab(t, pinned){
+  S.tab = t; if (pinned) S.tabPinned = true;
+  $('wrapEnemy').classList.toggle('on', t === 'enemy'); $('wrapMine').classList.toggle('on', t === 'mine');
+  [].forEach.call($('tabs').children, function(b){ b.classList.toggle('on', b.dataset.tab === t); });
+  if (t === 'mine') $('mineDot').classList.remove('show');
+}
+var tabT;
+function autoTab(delay){
+  clearTimeout(tabT);
+  tabT = setTimeout(function(){ if (S.phase === 'battle' && S.turn) setTab(S.turn === 'me' ? 'enemy' : 'mine'); }, delay || 0);
+}
+function flagMine(){ if (S.tab !== 'mine') $('mineDot').classList.add('show'); }
+$('tabs').addEventListener('click', function(e){ var b = e.target.closest('button'); if (b) setTab(b.dataset.tab, true); });
+
+function renderTracker(el, sunkIds, label){
+  var h = '', left = 0;
+  BS.fleetList().forEach(function(s){
+    var sunk = !!sunkIds[s.id]; if (!sunk) left++;
+    h += '<span class="ts'+(sunk?' sunk':'')+'" title="'+shipName(s.id)+'">'+miniSVG(s.len,14)+'</span>';
+  });
+  el.innerHTML = '<div class="cnt">'+label+': '+left+'/'+BS.fleetList().length+' na wodzie</div>' + h;
+}
+function renderBattle(){
+  if (S.phase !== 'battle' && S.phase !== 'over') return;
+  // moja plansza
+  var mySunk = {};
+  if (S.def) S.def.ships.forEach(function(s){ if (s.hits >= s.len) mySunk[s.id] = 1; });
+  drawShips(mb, S.ships.map(function(s){ return {id:s.id,len:s.len,r:s.r,c:s.c,v:s.v,kind:'mine',cls:mySunk[s.id]?'sunk':''}; }));
+  var mm = [];
+  if (S.def) Object.keys(S.def.shots).forEach(function(k){ var x = S.def.shots[k], sh = x.res === 'miss' ? null : BS.shipAt(S.def.ships, x.r, x.c); mm.push({r:x.r, c:x.c, k: !sh ? 'miss' : (sh.hits >= sh.len ? 'wreck' : 'hit')}); });
+  drawMarks(mb, mm);
+  // plansza wroga
+  var es = [], sunkIds = {};
+  S.oppSunk.forEach(function(s){ sunkIds[s.id] = 1; es.push({id:s.id,len:s.len,r:s.r,c:s.c,v:!!s.v,kind:'enemy',cls:'sunk'}); });
+  if (S.oppReveal) S.oppReveal.forEach(function(s){ if (!sunkIds[s.id]) es.push({id:s.id,len:s.len,r:s.r,c:s.c,v:!!s.v,kind:'enemy',cls:'reveal'}); });
+  drawShips(eb, es);
+  var em = [];
+  Object.keys(S.attack).forEach(function(k){ var p = k.split(',').map(Number), a = S.attack[k], k2 = a.res;
+    if (k2 === 'hit' || k2 === 'sunk') k2 = BS.shipAt(S.oppSunk, p[0], p[1]) ? 'wreck' : 'hit';
+    em.push({r:p[0], c:p[1], k:k2}); });
+  if (S.pending) em.push({r:S.pending.r, c:S.pending.c, k:'aim'});
+  drawMarks(eb, em);
+  var armed = S.phase === 'battle' && S.turn === 'me' && !S.pending && S.connected;
+  eb.classList.toggle('armed', armed); eb.classList.toggle('dim', !armed);
+  renderTracker($('trackEnemy'), sunkIds, 'Wróg');
+  renderTracker($('trackMine'), mySunk, 'Twoja flota');
+  // pasek tury
+  var tb = $('turnbar');
+  if (S.phase === 'over'){ tb.className = 'turnbar ' + (S.result === 'win' ? 'me' : 'opp'); tb.innerHTML = (S.result === 'win' ? 'ZWYCIĘSTWO!' : 'PORAŻKA') + '<small>'+(S.rematchMe ? 'Czekam na rewanż przeciwnika…' : '<a href="#" id="reopen" style="color:inherit">Pokaż podsumowanie / rewanż</a>')+'</small>'; var ro = $('reopen'); if (ro) ro.onclick = function(e){ e.preventDefault(); showOverlay(); }; }
+  else if (!S.connected){ tb.className = 'turnbar'; tb.innerHTML = '📡 BRAK ŁĄCZNOŚCI<small>Czekam na odnowienie połączenia z przeciwnikiem…</small>'; }
+  else if (S.turn === 'me'){ tb.className = 'turnbar me'; tb.innerHTML = S.pending ? '💥 POCISK W DRODZE…<small>Cel: '+BS.pos(S.pending.r,S.pending.c)+'</small>' : '🎯 TWOJA SALWA<small>Wybierz cel na wodach wroga · trafienie = kolejny strzał</small>'; }
+  else { tb.className = 'turnbar opp'; tb.innerHTML = '⚠ WRÓG CELUJE<small>Przeciwnik oddaje salwę — trzymaj się mocno</small>'; }
+  renderLog(); renderInvite();
+}
+
+/* ---------- Zaproszenie ---------- */
+function inviteLink(){ return location.origin + location.pathname + '?join=' + encodeURIComponent((S.room || '').toUpperCase()); }
+function renderInvite(){
+  var h = '';
+  if (S.role === 'host' && S.room && !S.connected && (S.phase === 'place' || !S.everConnected)){
+    h = '<div class="invite"><div class="muted mono" style="font-size:12px">KOD POKOJU</div><div class="code">'+esc(S.room.toUpperCase())+'</div>' +
+        '<div class="row" style="margin-top:8px"><button class="btn brass small" data-act="copy">📋 Kopiuj link zaproszenia</button>' +
+        (navigator.share ? '<button class="btn small" data-act="share">📤 Udostępnij…</button>' : '') + '</div>' +
+        '<div class="link">'+esc(inviteLink())+'</div>' +
+        (location.protocol === 'file:' ? '<div class="warnbox">Strona jest otwarta z pliku na dysku — link nie zadziała u kolegi. Wrzuć plik na serwer HTTPS albo niech kolega otworzy ten sam plik i wpisze kod pokoju.</div>' : '') + '</div>';
+  } else if (S.role === 'guest' && S.room && S.phase === 'place'){
+    h = '<div class="invite"><div class="muted mono" style="font-size:12px">POKÓJ</div><div class="code">'+esc(S.room.toUpperCase())+'</div><div class="hint">Jesteś Gracz 2 — pierwszą salwę oddaje Gracz 1.</div></div>';
+  }
+  $('invitePlace').innerHTML = S.phase === 'place' ? h : ''; $('inviteBattle').innerHTML = S.phase === 'place' ? '' : (S.role === 'host' && !S.connected && S.phase === 'battle' ? h : '');
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-act]'); if (!b) return;
+  if (b.dataset.act === 'copy') copyText(inviteLink());
+  if (b.dataset.act === 'share') navigator.share({title:'Statki — Bitwa o Atlantyk', text:'Wyzywam Cię na bitwę morską! Kod pokoju: '+S.room.toUpperCase(), url:inviteLink()}).catch(function(){});
+});
+function copyText(t){
+  var done = function(){ toast('Link skopiowany — wyślij go koledze'); };
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(done, fallback); else fallback();
+  function fallback(){
+    var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly',''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, 99999);
+    try { document.execCommand('copy'); done(); } catch(e){ prompt('Skopiuj link:', t); }
+    ta.remove();
+  }
+}
+
+/* ---------- Sieć (PeerJS / WebRTC) ---------- */
+function genCode(){ var a = 'abcdefghjkmnpqrstuvwxyz23456789', s = ''; for (var i=0;i<6;i++) s += a[Math.floor(Math.random()*a.length)]; return s; }
+function normCode(x){
+  x = String(x || '').trim();
+  var m = x.match(/[?&]join=([^&#\s]+)/i); if (m) x = decodeURIComponent(m[1]);
+  x = x.toLowerCase(); if (x.indexOf(PREFIX) === 0) x = x.slice(PREFIX.length);
+  return x.replace(/[^a-z0-9]/g, '');
+}
+function peerOk(){
+  if (typeof Peer === 'undefined'){ setNet('err', 'Nie udało się załadować biblioteki PeerJS (brak internetu?)'); toast('Brak biblioteki sieciowej — odśwież stronę'); return false; }
+  return true;
+}
+function netError(err){
+  var map = {
+    'browser-incompatible':'Ta przeglądarka nie obsługuje WebRTC',
+    'network':'Brak połączenia z serwerem sygnałowym — ponawiam…',
+    'server-error':'Serwer PeerJS nie odpowiada — ponawiam…',
+    'socket-error':'Błąd gniazda sieciowego — ponawiam…',
+    'socket-closed':'Połączenie z serwerem zamknięte — ponawiam…',
+    'disconnected':'Rozłączono z serwerem — ponawiam…',
+    'webrtc':'Błąd WebRTC (sieć/NAT)'
+  };
+  console.warn('PeerJS', err && err.type, err);
+  setNet('err', map[err && err.type] || ('Błąd sieci: ' + (err && err.type || err)));
+  if (S.peer && !S.peer.destroyed && S.peer.disconnected) setTimeout(function(){ try { S.peer.reconnect(); } catch(e){} }, 3000);
+  if (S.role === 'guest') scheduleRetry(4000);
+}
+function startHost(code, restoring){
+  if (!peerOk()) return;
+  S.role = 'host'; S.room = code || genCode(); save();
+  var tries = 0;
+  (function mk(){
+    if (S.peer){ try { S.peer.destroy(); } catch(e){} }
+    setNet('wait', 'Otwieram pokój…');
+    var peer = S.peer = new Peer(PREFIX + S.room, PEER_OPTS);
+    peer.on('open', function(){ setNet(S.connected ? 'ok' : 'wait', S.connected ? 'Połączono z przeciwnikiem' : 'Pokój ' + S.room.toUpperCase() + ' otwarty — czekam na gracza 2'); renderAll(); });
+    peer.on('connection', function(c){
+      if (!c.metadata || c.metadata.app !== APP){ setTimeout(function(){ try { c.close(); } catch(e){} }, 500); return; }
+      if (S.conn && S.conn !== c){ var old = S.conn; S.conn = null; try { old.close(); } catch(e){} }
+      bindConn(c);
+    });
+    peer.on('disconnected', function(){ if (peer !== S.peer || peer.destroyed) return; setNet(S.connected ? 'ok' : 'wait', S.connected ? 'Połączono (serwer sygnałowy offline — ponawiam)' : 'Utracono serwer sygnałowy — ponawiam…'); setTimeout(function(){ if (peer === S.peer && !peer.destroyed && peer.disconnected) try { peer.reconnect(); } catch(e){} }, 2500); });
+    peer.on('error', function(err){
+      if (peer !== S.peer) return;
+      if (err.type === 'unavailable-id'){
+        if (restoring && tries++ < 10){ setNet('wait', 'Odzyskuję pokój ' + S.room.toUpperCase() + '… (' + tries + ')'); setTimeout(mk, 4000); }
+        else { S.room = genCode(); restoring = false; save(); mk(); }
+        return;
+      }
+      netError(err);
+    });
+  })();
+}
+var retryT, connT;
+function startGuest(code){
+  if (!peerOk()) return;
+  S.role = 'guest'; S.room = code; save();
+  setNet('wait', 'Łączę z serwerem…');
+  var peer = S.peer = new Peer(PEER_OPTS);
+  peer.on('open', function(){ connectHost(); });
+  peer.on('disconnected', function(){ if (peer.destroyed) return; setTimeout(function(){ if (!peer.destroyed && peer.disconnected) try { peer.reconnect(); } catch(e){} }, 2000); });
+  peer.on('error', function(err){
+    if (err.type === 'peer-unavailable'){ setNet('err', 'Pokój ' + S.room.toUpperCase() + ' nie odpowiada — Gracz 1 musi mieć otwartą stronę. Ponawiam…'); scheduleRetry(5000); return; }
+    netError(err);
+  });
+}
+function connectHost(){
+  clearTimeout(retryT);
+  var peer = S.peer; if (!peer || peer.destroyed) return;
+  if (peer.disconnected){ try { peer.reconnect(); } catch(e){} return; }
+  if (S.conn && S.conn.open) return;
+  setNet('wait', 'Łączę z pokojem ' + S.room.toUpperCase() + '…');
+  var c = peer.connect(PREFIX + S.room, {reliable:true, serialization:'json', metadata:{app:APP}});
+  bindConn(c);
+  clearTimeout(connT);
+  connT = setTimeout(function(){
+    if (!c.open && S.conn === c){ try { c.close(); } catch(e){} S.conn = null; setNet('err', 'Nie udało się zestawić połączenia (sieć/NAT). Ponawiam…'); scheduleRetry(1500); }
+  }, 15000);
+}
+function scheduleRetry(ms){ clearTimeout(retryT); retryT = setTimeout(connectHost, ms); }
+function bindConn(c){
+  S.conn = c;
+  c.on('open', function(){
+    if (S.conn !== c) return;
+    clearTimeout(connT);
+    var first = !S.everConnected;
+    S.connected = true; S.everConnected = true; S.lastSeen = Date.now();
+    setNet('ok', 'Połączono z przeciwnikiem');
+    send({t:'hello', role:S.role, ready:S.myReady, phase:S.phase});
+    log(first ? 'ŁĄCZNOŚĆ RADIOWA NAWIĄZANA STOP PRZECIWNIK NA NASŁUCHU' : 'ŁĄCZNOŚĆ PRZYWRÓCONA STOP', 'air');
+    if (S.pending) send({t:'shot', r:S.pending.r, c:S.pending.c});
+    if (S.phase === 'over') send({t:'reveal', ships:S.ships});
+    if (S.rematchMe) send({t:'rematch'});
+    renderAll();
+  });
+  c.on('data', function(m){ if (S.conn === c) onData(m); });
+  c.on('close', function(){ if (S.conn === c) lost(); });
+  c.on('error', function(e){ console.warn('conn error', e); });
+}
+function lost(){
+  var was = S.connected;
+  S.connected = false; S.conn = null;
+  if (S.role === 'host') setNet('wait', 'Przeciwnik rozłączony — czeka na niego ten sam link (' + (S.room||'').toUpperCase() + ')');
+  else { setNet('err', 'Utracono połączenie — ponawiam…'); scheduleRetry(2000); }
+  if (was) log('UTRACONO ŁĄCZNOŚĆ Z PRZECIWNIKIEM STOP NASŁUCHUJEMY', 'air');
+  renderAll();
+}
+function send(m){
+  if (!S.conn || !S.conn.open) return false;
+  if (m.g == null) m.g = S.gameNo;
+  try { S.conn.send(m); return true; } catch(e){ return false; }
+}
+function onData(m){
+  if (!m || typeof m !== 'object') return;
+  S.lastSeen = Date.now();
+  switch(m.t){
+    case 'ping': return;
+    case 'hello':
+      if (m.role === S.role){ setNet('err', 'Obaj gracze mają tę samą rolę — Gracz 2 musi otworzyć link zaproszenia'); return; }
+      if (m.g === S.gameNo){ var was = S.oppReady; S.oppReady = !!m.ready || (m.phase === 'battle' || m.phase === 'over'); if (S.oppReady && !was && S.phase === 'place') log('PRZECIWNIK ZGŁASZA GOTOWOŚĆ BOJOWĄ STOP', 'air'); }
+      maybeStart(); break;
+    case 'ready': if (m.g === S.gameNo){ S.oppReady = true; log('PRZECIWNIK ZGŁASZA GOTOWOŚĆ BOJOWĄ STOP', 'air'); maybeStart(); } break;
+    case 'unready': if (m.g === S.gameNo && S.phase === 'place'){ S.oppReady = false; log('PRZECIWNIK PRZESTAWIA FLOTĘ STOP', 'air'); } break;
+    case 'shot': if (typeof m.r === 'number' && typeof m.c === 'number') onShot(m); break;
+    case 'result': onResult(m); break;
+    case 'reveal': onReveal(m); break;
+    case 'rematch': if (m.g === S.gameNo){ S.rematchOpp = true; if (S.phase === 'over' && !S.rematchMe) toast('Przeciwnik proponuje rewanż!'); maybeRematch(); if ($('overlay').classList.contains('on')) showOverlay(); } break;
+  }
+  save(); renderAll();
+}
+setInterval(function(){
+  if (S.connected){
+    send({t:'ping'});
+    if (Date.now() - S.lastSeen > 16000 && S.conn){ var c = S.conn; S.conn = null; try { c.close(); } catch(e){} lost(); }
+  }
+}, 4000);
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState !== 'visible' || !S.peer) return;
+  S.lastSeen = Math.max(S.lastSeen, Date.now() - 8000);
+  if (S.peer.disconnected && !S.peer.destroyed){ try { S.peer.reconnect(); } catch(e){} }
+  if (S.role === 'guest' && !S.connected) scheduleRetry(300);
+});
+
+function renderAll(){
+  if (S.phase === 'place') renderPlace();
+  else if (S.phase === 'battle' || S.phase === 'over') renderBattle();
+}
+
+/* ---------- Start ---------- */
+$('muteBtn').textContent = SFX.muted ? '🔇' : '🔊';
+$('muteBtn').onclick = function(){ SFX.muted = !SFX.muted; localStorage.setItem('statki-mute', SFX.muted ? '1' : '0'); this.textContent = SFX.muted ? '🔇' : '🔊'; SFX.init(); SFX.play('ping'); };
+$('quitBtn').onclick = function(){
+  if (!confirm('Opuścić pokój i zakończyć grę?')) return;
+  try { sessionStorage.removeItem(STORE); } catch(e){}
+  try { if (S.peer) S.peer.destroy(); } catch(e){}
+  location.href = location.pathname;
+};
+$('hostBtn').onclick = function(){ SFX.init(); enterPlacement(); startHost(); };
+$('joinBtn').onclick = function(){
+  var code = normCode($('joinInput').value);
+  if (code.length < 4){ toast('Wpisz kod pokoju od Gracza 1'); return; }
+  SFX.init();
+  history.replaceState(null, '', location.pathname + '?join=' + code.toUpperCase());
+  enterPlacement(); startGuest(code);
+};
+$('joinInput').addEventListener('keydown', function(e){ if (e.key === 'Enter') $('joinBtn').click(); });
+function enterPlacement(){
+  S.phase = 'place'; if (!S.ships.length) selectNext();
+  showScreen('scrPlace'); renderPlace();
+}
+if (location.protocol === 'file:') $('fileWarn').innerHTML = '<div class="warnbox">Uwaga: strona otwarta z pliku. Żeby link zaproszenia działał, plik musi być opublikowany pod adresem https://. Kod pokoju działa, jeśli kolega ma ten sam plik.</div>';
+
+(function boot(){
+  var q = new URLSearchParams(location.search), join = normCode(q.get('join'));
+  var saved = loadSaved();
+  if (saved && ((saved.role === 'guest' && join && saved.room === join) || (saved.role === 'host' && !join)) && saved.phase !== 'lobby'){
+    PERSIST.forEach(function(k){ if (saved[k] !== undefined) S[k] = saved[k]; });
+    S.oppReady = S.phase === 'battle' || S.phase === 'over' ? true : false;
+    if (S.phase === 'place'){ S.sel = null; showScreen('scrPlace'); renderPlace(); }
+    else { showScreen('scrBattle'); autoTab(0); renderBattle(); if (S.phase === 'over') showOverlay(); }
+    if (S.role === 'host') startHost(S.room, true); else startGuest(S.room);
+    return;
+  }
+  if (join){ enterPlacement(); startGuest(join); return; }
+  showScreen('scrLobby');
+})();
+
+window.__statki = { S:S, BS:BS, shoot:shoot };
+})();
+</script>
+</body>
+</html>
