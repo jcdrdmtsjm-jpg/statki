@@ -1129,9 +1129,9 @@ function enterPlacement(){
 if (location.protocol === 'file:') $('fileWarn').innerHTML = '<div class="warnbox">Uwaga: strona otwarta z pliku. Żeby link zaproszenia działał, plik musi być opublikowany pod adresem https://. Kod pokoju działa, jeśli kolega ma ten sam plik.</div>';
 
 (function boot(){
-  var q = new URLSearchParams(location.search), join = normCode(q.get('join'));
+  var q = new URLSearchParams(location.search), join = normCode(q.get('join')), hostq = normCode(q.get('host'));
   var saved = loadSaved();
-  if (saved && ((saved.role === 'guest' && join && saved.room === join) || (saved.role === 'host' && !join)) && saved.phase !== 'lobby'){
+  if (saved && ((saved.role === 'guest' && join && saved.room === join) || (saved.role === 'host' && !join && (!hostq || saved.room === hostq))) && saved.phase !== 'lobby'){
     PERSIST.forEach(function(k){ if (saved[k] !== undefined) S[k] = saved[k]; });
     S.oppReady = S.phase === 'battle' || S.phase === 'over' ? true : false;
     if (S.phase === 'place'){ S.sel = null; showScreen('scrPlace'); renderPlace(); }
@@ -1140,6 +1140,7 @@ if (location.protocol === 'file:') $('fileWarn').innerHTML = '<div class="warnbo
     return;
   }
   if (join){ enterPlacement(); startGuest(join); return; }
+  if (hostq && hostq.length >= 4){ SFX.init(); enterPlacement(); startHost(hostq); return; }
   showScreen('scrLobby');
 })();
 
